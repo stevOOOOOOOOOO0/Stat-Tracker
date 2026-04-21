@@ -4,7 +4,10 @@
       "Bash(npm install *)",
       "Bash(npx tsc *)",
       "Bash(npx vite *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(netsh advfirewall *)",
+      "Bash(ipconfig)",
+      "Bash(netlify --version)"
     ]
   }
 }
