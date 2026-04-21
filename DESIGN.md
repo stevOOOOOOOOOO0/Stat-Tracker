@@ -102,7 +102,7 @@ Biography lives in the Biography, Notes & History tab and is intended for stable
 
 ### Quick-Access Bar
 
-The **Quick-Access Bar** automatically tracks interaction frequency across all stats, abilities, and items. The 4 most frequently used entries are surfaced as large tap targets at the top of the Character Sheet View, always visible regardless of which tab is active.
+The **Quick-Access Bar** automatically tracks interaction frequency across all stats, abilities, and items. The 4 most frequently used entries are surfaced as large tap targets at the top of the Character Sheet View, always visible while scrolling.
 
 - Frequency is tracked locally per character (tap count per item)
 - The bar updates in real time as usage patterns change
@@ -148,10 +148,13 @@ Campaign View  (top level)
     ├── Initiative Tracker  (GM-managed turn order, visible to all)
     └── Character Sheet View  (scoped to one character)
         ├── Quick-Access Bar  (auto-pinned: 4 most-used stats/abilities/items)
-        ├── Stats tab
-        ├── Items & Currency tab
-        ├── Abilities tab
-        └── Biography, Notes & History tab
+        ├── Scrollable sheet  (all sections in one continuous list)
+        │   ├── Stats (stat blocks)
+        │   ├── Items & Currency
+        │   ├── Abilities
+        │   ├── Biography
+        │   └── Notes & History
+        └── [+] Create FAB  (create any entity type from one button)
 
 [Dice Calculator]  — floating button, accessible from every view
 [Search]  — accessible from every view, scopes to open character or campaign
@@ -185,18 +188,15 @@ An **Initiative Tracker** panel is also accessible here. The GM sets and reorder
 
 ### Character Sheet View
 
-The primary working view. Organized into tabs so the player can focus on one concern at a time:
+The primary working view. The entire character sheet is a **single continuous scrollable page** — no tabs. All sections (stats, items, currency, abilities, biography, notes, history) are stacked vertically and the player scrolls through them freely.
 
-| Tab | Contents |
-|---|---|
-| **Stats** | All stat blocks; tap any stat to edit, increment, or decrement |
-| **Items & Currency** | Item list plus currency wallet; tap items to use, edit, or adjust quantity |
-| **Abilities** | Ability list; tap to use (rolls, resource deduction, prepared toggle) or edit |
-| **Biography, Notes & History** | Character biography, freeform notes with tags, and the append-only event log |
+Each section has a collapsible header so players can hide sections they don't need during a session. Section order is fixed but sections can be collapsed to keep the view tidy.
 
-A **Quick-Access Bar** sits above the tabs and always remains visible. It auto-populates with the 4 stats, abilities, or items the player has interacted with most frequently. Tapping a quick-access entry fires that item's primary action immediately (increment/decrement for stats, roll for items and abilities) without navigating to its tab.
+A **Quick-Access Bar** sits below the page header and always remains visible while scrolling. It auto-populates with the 4 stats, abilities, or items the player has interacted with most frequently. Tapping a quick-access entry fires that item's primary action immediately without scrolling.
 
-When viewing another player's character (read-only), all edit controls are hidden. The owner's edits appear live if the device is online.
+A single **[+] Create FAB** sits fixed at the bottom-right. Tapping it opens a creation picker sheet with options to create any entity type: Stat Block, Stat, Item, Ability, Biography Section, or Note. The player picks a type and the relevant creation form opens immediately.
+
+When viewing another player's character (read-only), all edit controls and the Create FAB are hidden. The owner's edits appear live if the device is online.
 
 ### Dice Calculator
 
@@ -363,6 +363,8 @@ See [Key Capabilities — Initiative Tracker](#initiative-tracker) for full deta
 - [ ] Auto-generated history log for stat changes, ability/item use, rest actions, and level-ups
 - [ ] Manual history entries
 - [ ] Condition library: pre-seeded common conditions, apply with one tap, custom conditions supported
+- [ ] Single scrollable character sheet with all sections (stats, items, currency, abilities, biography, notes, history) stacked vertically; sections are individually collapsible
+- [ ] Single [+] Create FAB on character sheet opens a type-picker sheet to create any entity (stat block, stat, item, ability, biography section, note)
 - [ ] Quick-access bar: auto-surfaces the 4 most-used stats/abilities/items; manual pin/unpin override
 - [ ] Dice calculator: quick dice buttons and formula input, accessible from every view
 - [ ] Search: scoped to open character or campaign

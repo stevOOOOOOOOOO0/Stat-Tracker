@@ -9,7 +9,6 @@ import { useUIStore } from '../../store/uiStore'
 import { useCharacter } from '../../hooks/useCharacter'
 import { AppShell } from '../../components/layout/AppShell'
 import { PageHeader } from '../../components/layout/PageHeader'
-import { TabBar } from '../../components/layout/TabBar'
 import { XpBar } from '../../components/shared/XpBar'
 import { BottomSheet } from '../../components/overlays/BottomSheet'
 import { Button } from '../../components/ui/Button'
@@ -24,15 +23,59 @@ import { StatsTab } from './tabs/StatsTab'
 import { ItemsTab } from './tabs/ItemsTab'
 import { AbilitiesTab } from './tabs/AbilitiesTab'
 import { BiographyTab } from './tabs/BiographyTab'
+import { StatEditSheet } from './stats/StatEditSheet'
+import { CreateStatBlockSheet } from './stats/CreateStatBlockSheet'
+import { ItemEditSheet } from './items/ItemEditSheet'
+import { AbilityEditSheet } from './abilities/AbilityEditSheet'
+import { NoteEditSheet } from './biography/NoteEditSheet'
 import type { RestAction, RestReset, RestResetMode } from '../../types'
 import { generateId } from '../../lib/ids'
+import { now } from '../../lib/dates'
+import { cn } from '../../lib/cn'
 
-const TABS = [
-  { label: 'Stats' },
-  { label: 'Items & Currency' },
-  { label: 'Abilities' },
-  { label: 'Biography & Notes' },
+// ─── Collapsible section wrapper ────────────────────────────────────────────
+
+interface SectionProps {
+  title: string
+  defaultOpen?: boolean
+  children: React.ReactNode
+}
+
+function CollapsibleSection({ title, defaultOpen = true, children }: SectionProps) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="border-b border-slate-800">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-slate-900 sticky top-0 z-10"
+      >
+        <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+          {title}
+        </span>
+        <span className={cn('text-slate-500 transition-transform text-sm', open ? 'rotate-180' : '')}>
+          ▼
+        </span>
+      </button>
+      {open && <div className="px-2 pb-3">{children}</div>}
+    </div>
+  )
+}
+
+// ─── Create type picker ──────────────────────────────────────────────────────
+
+type CreateType = 'stat-block' | 'stat' | 'item' | 'ability' | 'bio-section' | 'note'
+
+const CREATE_OPTIONS: { type: CreateType; label: string; icon: string; description: string }[] = [
+  { type: 'stat-block', label: 'Stat Block',      icon: '📋', description: 'A named group of stats' },
+  { type: 'stat',       label: 'Stat',            icon: '📊', description: 'HP, Strength, AC…' },
+  { type: 'item',       label: 'Item',            icon: '⚔️',  description: 'Weapon, potion, gear…' },
+  { type: 'ability',    label: 'Ability',         icon: '✨', description: 'Spell, skill, feature…' },
+  { type: 'bio-section',label: 'Biography Section',icon: '📖', description: 'Backstory, traits…' },
+  { type: 'note',       label: 'Note',            icon: '📝', description: 'Session notes, reminders…' },
 ]
+
+// ─── Rest form ───────────────────────────────────────────────────────────────
 
 interface NewRestActionForm {
   name: string
@@ -42,53 +85,48 @@ interface NewRestActionForm {
 }
 
 function emptyRestForm(): NewRestActionForm {
-  return {
-    name: '',
-    resetStatId: '',
-    resetMode: 'full',
-    resetAmount: 0,
-  }
+  return { name: '', resetStatId: '', resetMode: 'full', resetAmount: 0 }
 }
 
+// ─── Main view ───────────────────────────────────────────────────────────────
+
 export default function CharacterSheetView() {
-  const { campaignId, characterId } = useParams<{
-    campaignId: string
-    characterId: string
-  }>()
+  const { campaignId, characterId } = useParams<{ campaignId: string; characterId: string }>()
   const navigate = useNavigate()
 
-  // Store actions
   const setActiveCharacter = useCharacterStore((s) => s.setActiveCharacter)
-  const loadCharacters = useCharacterStore((s) => s.loadCharacters)
-  const characters = useCharacterStore((s) => s.characters)
-  const updateCharacter = useCharacterStore((s) => s.updateCharacter)
+  const loadCharacters    = useCharacterStore((s) => s.loadCharacters)
+  const characters        = useCharacterStore((s) => s.characters)
+  const updateCharacter   = useCharacterStore((s) => s.updateCharacter)
+  const addStatBlock      = useCharacterStore((s) => s.addStatBlock)
 
-  // Hooks
-  const { character } = useCharacter()
-  const { campaign, setActiveCampaign } = useCampaign()
+  const { character }                        = useCharacter()
+  const { campaign, setActiveCampaign }      = useCampaign()
   const { conditionLibrary, appliedConditions } = useConditions()
-  const { restActions, triggerRest } = useRestActions()
-  const { exportCharacter } = useExport()
-  const openSearch = useUIStore((s) => s.openSearch)
+  const { restActions, triggerRest }         = useRestActions()
+  const { exportCharacter }                  = useExport()
+  const openSearch                           = useUIStore((s) => s.openSearch)
 
-  // Local state
-  const [activeTab, setActiveTab] = useState(0)
-  const [isRestSheetOpen, setIsRestSheetOpen] = useState(false)
-  const [addRestForm, setAddRestForm] = useState<NewRestActionForm>(emptyRestForm())
-  const [isAddRestFormOpen, setIsAddRestFormOpen] = useState(false)
+  // Sheet states
+  const [isCreatePickerOpen, setIsCreatePickerOpen]         = useState(false)
+  const [isRestSheetOpen,     setIsRestSheetOpen]           = useState(false)
+  const [isAddRestFormOpen,   setIsAddRestFormOpen]         = useState(false)
+  const [addRestForm,         setAddRestForm]               = useState<NewRestActionForm>(emptyRestForm())
 
-  // Mount: activate character and load campaign data
+  // Creation sub-sheet states
+  const [createStatBlockOpen, setCreateStatBlockOpen]       = useState(false)
+  const [createStatOpen,      setCreateStatOpen]            = useState(false)
+  const [createStatBlockId,   setCreateStatBlockId]         = useState('')
+  const [createItemOpen,      setCreateItemOpen]            = useState(false)
+  const [createAbilityOpen,   setCreateAbilityOpen]         = useState(false)
+  const [createNoteOpen,      setCreateNoteOpen]            = useState(false)
+
   useEffect(() => {
     if (!characterId || !campaignId) return
     setActiveCharacter(characterId)
     setActiveCampaign(campaignId)
-    // Load characters if not yet loaded for this campaign
-    const hasCharacters = Object.values(characters).some(
-      (c) => c.campaignId === campaignId
-    )
-    if (!hasCharacters) {
-      loadCharacters(campaignId)
-    }
+    const hasCharacters = Object.values(characters).some((c) => c.campaignId === campaignId)
+    if (!hasCharacters) loadCharacters(campaignId)
   }, [characterId, campaignId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!characterId || !campaignId) {
@@ -101,238 +139,244 @@ export default function CharacterSheetView() {
     )
   }
 
+  // ── Create picker handler ──
+  const handleCreatePick = (type: CreateType) => {
+    setIsCreatePickerOpen(false)
+    if (type === 'stat-block') {
+      setCreateStatBlockOpen(true)
+    } else if (type === 'stat') {
+      // Ensure there's at least one stat block to add to
+      if (!character || character.statBlocks.length === 0) {
+        const blockId = generateId()
+        addStatBlock(characterId, {
+          id: blockId,
+          characterId,
+          name: 'General',
+          order: 0,
+          statIds: [],
+        })
+        setCreateStatBlockId(blockId)
+      } else {
+        setCreateStatBlockId(character.statBlocks[0].id)
+      }
+      setCreateStatOpen(true)
+    } else if (type === 'item') {
+      setCreateItemOpen(true)
+    } else if (type === 'ability') {
+      setCreateAbilityOpen(true)
+    } else if (type === 'bio-section') {
+      // Add a biography section directly
+      if (character) {
+        const sections = character.biography?.sections ?? []
+        updateCharacter(characterId, {
+          biography: {
+            characterId,
+            sections: [
+              ...sections,
+              { id: generateId(), title: 'New Section', body: '', order: sections.length },
+            ],
+          },
+        })
+      }
+    } else if (type === 'note') {
+      setCreateNoteOpen(true)
+    }
+  }
+
+  // ── Rest action handler ──
   const handleAddRestAction = () => {
     if (!addRestForm.name.trim() || !character) return
-
     const resets: RestReset[] = addRestForm.resetStatId
-      ? [
-          {
-            statId: addRestForm.resetStatId,
-            mode: addRestForm.resetMode,
-            amount:
-              addRestForm.resetMode !== 'full' ? addRestForm.resetAmount : undefined,
-          },
-        ]
+      ? [{ statId: addRestForm.resetStatId, mode: addRestForm.resetMode,
+           amount: addRestForm.resetMode !== 'full' ? addRestForm.resetAmount : undefined }]
       : []
-
-    const newRestAction: RestAction = {
-      id: generateId(),
-      characterId,
-      name: addRestForm.name.trim(),
-      resets,
+    const newRest: RestAction = {
+      id: generateId(), characterId, name: addRestForm.name.trim(), resets,
     }
-
-    updateCharacter(characterId, {
-      restActions: [...(character.restActions ?? []), newRestAction],
-    })
-
+    updateCharacter(characterId, { restActions: [...(character.restActions ?? []), newRest] })
     setAddRestForm(emptyRestForm())
     setIsAddRestFormOpen(false)
   }
 
-  const headerActions = (
-    <>
-      <IconButton
-        icon={<span className="text-base leading-none">🔍</span>}
-        label="Search"
-        variant="ghost"
-        size="sm"
-        onClick={openSearch}
-      />
-      <IconButton
-        icon={<span className="text-base leading-none">⬇</span>}
-        label="Export character"
-        variant="ghost"
-        size="sm"
-        onClick={exportCharacter}
-      />
-      <IconButton
-        icon={<span className="text-base leading-none">💤</span>}
-        label="Rest"
-        variant="ghost"
-        size="sm"
-        onClick={() => setIsRestSheetOpen(true)}
-      />
-    </>
-  )
+  const statOptions = character
+    ? [{ value: '', label: '— No stat —' },
+       ...character.stats
+         .filter((s) => s.category === 'resource' || s.category === 'base')
+         .map((s) => ({ value: s.id, label: s.name }))]
+    : [{ value: '', label: '— No stat —' }]
 
   const resetModeOptions = [
-    { value: 'full', label: 'Full restore' },
+    { value: 'full',  label: 'Full restore' },
     { value: 'fixed', label: 'Fixed amount' },
-    { value: 'roll', label: 'Roll formula' },
+    { value: 'roll',  label: 'Roll formula' },
   ]
-
-  const statOptions = character
-    ? [
-        { value: '', label: '— No stat —' },
-        ...character.stats
-          .filter((s) => s.category === 'resource' || s.category === 'base')
-          .map((s) => ({ value: s.id, label: s.name })),
-      ]
-    : [{ value: '', label: '— No stat —' }]
 
   return (
     <AppShell>
       <div className="flex flex-col h-screen overflow-hidden">
-        {/* Header */}
+
+        {/* ── Header ── */}
         <PageHeader
           title={character?.name ?? 'Loading...'}
-          subtitle={
-            character
-              ? `Level ${character.level}${campaign?.system ? ` · ${campaign.system}` : ''}`
-              : undefined
-          }
+          subtitle={character
+            ? `Level ${character.level}${campaign?.system ? ` · ${campaign.system}` : ''}`
+            : undefined}
           onBack={() => navigate(`/campaigns/${campaignId}`)}
-          actions={headerActions}
+          actions={
+            <>
+              <IconButton icon={<span>🔍</span>} label="Search"   variant="ghost" size="sm" onClick={openSearch} />
+              <IconButton icon={<span>⬇</span>}  label="Export"   variant="ghost" size="sm" onClick={exportCharacter} />
+              <IconButton icon={<span>💤</span>}  label="Rest"     variant="ghost" size="sm" onClick={() => setIsRestSheetOpen(true)} />
+            </>
+          }
         />
 
-        {/* XP bar */}
+        {/* ── XP bar ── */}
         {character && (
           <div className="px-3 py-2 bg-slate-900 border-b border-slate-800">
-            <XpBar
-              currentXp={character.currentXp}
-              threshold={character.xpThreshold}
-              level={character.level}
-            />
+            <XpBar currentXp={character.currentXp} threshold={character.xpThreshold} level={character.level} />
           </div>
         )}
 
-        {/* Condition chip bar */}
+        {/* ── Condition chips ── */}
         {character && (
-          <ConditionChipBar
-            applied={appliedConditions}
-            conditions={conditionLibrary}
+          <ConditionChipBar applied={appliedConditions} conditions={conditionLibrary} characterId={characterId} />
+        )}
+
+        {/* ── Quick-access bar ── */}
+        {character && <QuickAccessBar characterId={characterId} />}
+
+        {/* ── Single scrollable sheet ── */}
+        <div className="flex-1 overflow-y-auto pb-24">
+
+          <CollapsibleSection title="Stats">
+            <StatsTab />
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Items & Currency">
+            <ItemsTab />
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Abilities">
+            <AbilitiesTab />
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Biography, Notes & History">
+            <BiographyTab />
+          </CollapsibleSection>
+
+        </div>
+
+        {/* ── Create FAB ── */}
+        <button
+          type="button"
+          onClick={() => setIsCreatePickerOpen(true)}
+          aria-label="Create new"
+          className="fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all shadow-lg flex items-center justify-center text-white text-2xl font-light"
+        >
+          +
+        </button>
+
+        {/* ── Create picker sheet ── */}
+        <BottomSheet isOpen={isCreatePickerOpen} onClose={() => setIsCreatePickerOpen(false)} title="Create New">
+          <div className="grid grid-cols-2 gap-3 pb-4">
+            {CREATE_OPTIONS.map((opt) => (
+              <button
+                key={opt.type}
+                type="button"
+                onClick={() => handleCreatePick(opt.type)}
+                className="flex flex-col items-center gap-2 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-xl p-4 text-center"
+              >
+                <span className="text-3xl">{opt.icon}</span>
+                <span className="text-sm font-semibold text-slate-100">{opt.label}</span>
+                <span className="text-xs text-slate-400">{opt.description}</span>
+              </button>
+            ))}
+          </div>
+        </BottomSheet>
+
+        {/* ── Creation sub-sheets ── */}
+        <CreateStatBlockSheet
+          isOpen={createStatBlockOpen}
+          onClose={() => setCreateStatBlockOpen(false)}
+          characterId={characterId}
+        />
+
+        {createStatBlockId && (
+          <StatEditSheet
+            stat={null}
+            blockId={createStatBlockId}
+            isOpen={createStatOpen}
+            onClose={() => setCreateStatOpen(false)}
+            stats={character?.stats ?? []}
             characterId={characterId}
           />
         )}
 
-        {/* Quick access bar */}
-        {character && <QuickAccessBar characterId={characterId} />}
-
-        {/* Tab bar */}
-        <TabBar
-          tabs={TABS}
-          activeIndex={activeTab}
-          onChange={setActiveTab}
+        <ItemEditSheet
+          item={null}
+          isOpen={createItemOpen}
+          onClose={() => setCreateItemOpen(false)}
+          characterId={characterId}
+          stats={character?.stats ?? []}
         />
 
-        {/* Tab content */}
-        <div className="flex-1 overflow-y-auto">
-          {activeTab === 0 && <StatsTab />}
-          {activeTab === 1 && <ItemsTab />}
-          {activeTab === 2 && <AbilitiesTab />}
-          {activeTab === 3 && <BiographyTab />}
-        </div>
+        <AbilityEditSheet
+          ability={null}
+          isOpen={createAbilityOpen}
+          onClose={() => setCreateAbilityOpen(false)}
+          characterId={characterId}
+          stats={character?.stats ?? []}
+        />
 
-        {/* Rest actions sheet */}
+        <NoteEditSheet
+          note={null}
+          isOpen={createNoteOpen}
+          onClose={() => setCreateNoteOpen(false)}
+          characterId={characterId}
+        />
+
+        {/* ── Rest sheet ── */}
         <BottomSheet
           isOpen={isRestSheetOpen}
-          onClose={() => {
-            setIsRestSheetOpen(false)
-            setIsAddRestFormOpen(false)
-            setAddRestForm(emptyRestForm())
-          }}
+          onClose={() => { setIsRestSheetOpen(false); setIsAddRestFormOpen(false); setAddRestForm(emptyRestForm()) }}
           title="Rest Actions"
         >
           <div className="flex flex-col gap-3 pb-4">
-            {restActions.length === 0 && !isAddRestFormOpen ? (
-              <p className="text-slate-500 text-sm">
-                No rest actions defined. Add one below.
-              </p>
-            ) : (
-              restActions.map((ra) => (
-                <Button
-                  key={ra.id}
-                  variant="secondary"
-                  fullWidth
-                  onClick={() => {
-                    triggerRest(ra, conditionLibrary)
-                    setIsRestSheetOpen(false)
-                  }}
-                >
-                  {ra.name}
-                </Button>
-              ))
+            {restActions.length === 0 && !isAddRestFormOpen && (
+              <p className="text-slate-500 text-sm">No rest actions defined. Add one below.</p>
             )}
+            {restActions.map((ra) => (
+              <Button key={ra.id} variant="secondary" fullWidth
+                onClick={() => { triggerRest(ra, conditionLibrary); setIsRestSheetOpen(false) }}>
+                {ra.name}
+              </Button>
+            ))}
 
-            {/* Add rest action toggle */}
             {!isAddRestFormOpen ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsAddRestFormOpen(true)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setIsAddRestFormOpen(true)}>
                 + Add Rest Action
               </Button>
             ) : (
               <div className="flex flex-col gap-3 bg-slate-700/40 rounded-xl p-3">
                 <p className="text-sm font-semibold text-slate-300">New Rest Action</p>
-
-                <Input
-                  label="Name"
-                  value={addRestForm.name}
-                  onChange={(e) =>
-                    setAddRestForm((f) => ({ ...f, name: e.target.value }))
-                  }
-                  placeholder="e.g. Short Rest"
-                />
-
-                <Select
-                  label="Stat to reset"
-                  value={addRestForm.resetStatId}
-                  onChange={(e) =>
-                    setAddRestForm((f) => ({ ...f, resetStatId: e.target.value }))
-                  }
-                  options={statOptions}
-                />
-
+                <Input label="Name" value={addRestForm.name} placeholder="e.g. Short Rest"
+                  onChange={(e) => setAddRestForm((f) => ({ ...f, name: e.target.value }))} />
+                <Select label="Stat to reset" value={addRestForm.resetStatId} options={statOptions}
+                  onChange={(e) => setAddRestForm((f) => ({ ...f, resetStatId: e.target.value }))} />
                 {addRestForm.resetStatId && (
-                  <Select
-                    label="Reset mode"
-                    value={addRestForm.resetMode}
-                    onChange={(e) =>
-                      setAddRestForm((f) => ({
-                        ...f,
-                        resetMode: e.target.value as RestResetMode,
-                      }))
-                    }
-                    options={resetModeOptions}
-                  />
+                  <Select label="Reset mode" value={addRestForm.resetMode} options={resetModeOptions}
+                    onChange={(e) => setAddRestForm((f) => ({ ...f, resetMode: e.target.value as RestResetMode }))} />
                 )}
-
                 {addRestForm.resetStatId && addRestForm.resetMode === 'fixed' && (
                   <div className="flex flex-col items-center">
-                    <NumberStepper
-                      value={addRestForm.resetAmount}
-                      onChange={(v) =>
-                        setAddRestForm((f) => ({ ...f, resetAmount: v }))
-                      }
-                      min={0}
-                      label="Amount"
-                      size="sm"
-                    />
+                    <NumberStepper value={addRestForm.resetAmount} min={0} label="Amount" size="sm"
+                      onChange={(v) => setAddRestForm((f) => ({ ...f, resetAmount: v }))} />
                   </div>
                 )}
-
                 <div className="flex gap-2">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleAddRestAction}
-                    disabled={!addRestForm.name.trim()}
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setIsAddRestFormOpen(false)
-                      setAddRestForm(emptyRestForm())
-                    }}
-                  >
-                    Cancel
-                  </Button>
+                  <Button variant="primary" size="sm" disabled={!addRestForm.name.trim()} onClick={handleAddRestAction}>Save</Button>
+                  <Button variant="ghost"   size="sm" onClick={() => { setIsAddRestFormOpen(false); setAddRestForm(emptyRestForm()) }}>Cancel</Button>
                 </div>
               </div>
             )}
