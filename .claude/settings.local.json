@@ -7,7 +7,12 @@
       "Bash(npm run *)",
       "Bash(netsh advfirewall *)",
       "Bash(ipconfig)",
-      "Bash(netlify --version)"
+      "Bash(netlify --version)",
+      "Bash(node -e \"const m = require\\('./node_modules/marked/src/marked.js'\\); console.log\\(typeof m.marked, typeof m.marked.parse\\)\")",
+      "Bash(node -e \"import\\('./node_modules/marked/src/marked.cjs'\\).then\\(m => console.log\\(Object.keys\\(m.marked || m\\)\\)\\)\")",
+      "Read(//c/c/Users/steph/Documents/Repositories/StatTracker/Stat-Tracker/node_modules/marked/src/**)",
+      "Read(//c/c/Users/steph/Documents/Repositories/StatTracker/Stat-Tracker/node_modules/marked/**)",
+      "Read(//c/c/Users/steph/Documents/Repositories/StatTracker/Stat-Tracker/node_modules/mathjs/**)"
     ]
   }
 }
