@@ -29,33 +29,23 @@ import { NoteEditSheet } from './biography/NoteEditSheet'
 import type { RestAction, RestReset, RestResetMode } from '../../types'
 import { generateId } from '../../lib/ids'
 import { now } from '../../lib/dates'
-import { cn } from '../../lib/cn'
 
-// ─── Collapsible section wrapper ────────────────────────────────────────────
+// ─── Section wrapper ─────────────────────────────────────────────────────────
 
 interface SectionProps {
   title: string
-  defaultOpen?: boolean
   children: React.ReactNode
 }
 
-function CollapsibleSection({ title, defaultOpen = true, children }: SectionProps) {
-  const [open, setOpen] = useState(defaultOpen)
+function Section({ title, children }: SectionProps) {
   return (
     <div className="border-b border-slate-800">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-slate-900 sticky top-0 z-10"
-      >
+      <div className="px-4 py-3 bg-slate-900 sticky top-0 z-10">
         <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
           {title}
         </span>
-        <span className={cn('text-slate-500 transition-transform text-sm', open ? 'rotate-180' : '')}>
-          ▼
-        </span>
-      </button>
-      {open && <div className="px-2 pb-3">{children}</div>}
+      </div>
+      <div className="px-2 pb-3">{children}</div>
     </div>
   )
 }
@@ -237,21 +227,33 @@ export default function CharacterSheetView() {
         {/* ── Single scrollable sheet ── */}
         <div className="flex-1 overflow-y-auto pb-24">
 
-          <CollapsibleSection title="Stats">
-            <StatsTab />
-          </CollapsibleSection>
+          {character && (character.statBlocks.length > 0 || character.stats.length > 0) && (
+            <Section title="Stats">
+              <StatsTab />
+            </Section>
+          )}
 
-          <CollapsibleSection title="Items & Currency">
-            <ItemsTab />
-          </CollapsibleSection>
+          {character && (character.items.length > 0 || character.currency.length > 0) && (
+            <Section title="Items & Currency">
+              <ItemsTab />
+            </Section>
+          )}
 
-          <CollapsibleSection title="Abilities">
-            <AbilitiesTab />
-          </CollapsibleSection>
+          {character && character.abilities.length > 0 && (
+            <Section title="Abilities">
+              <AbilitiesTab />
+            </Section>
+          )}
 
-          <CollapsibleSection title="Biography, Notes & History">
-            <BiographyTab />
-          </CollapsibleSection>
+          {character && (
+            (character.biography?.sections?.length ?? 0) > 0 ||
+            character.notes.length > 0 ||
+            character.history.length > 0
+          ) && (
+            <Section title="Biography, Notes & History">
+              <BiographyTab />
+            </Section>
+          )}
 
         </div>
 
