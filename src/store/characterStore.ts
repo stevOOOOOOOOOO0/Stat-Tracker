@@ -18,15 +18,12 @@ import {
 } from '../db/tables/characters'
 import { generateId } from '../lib/ids'
 import { now } from '../lib/dates'
-import { buildGraph, getDownstream, topologicalSort } from '../engine/affectorGraph'
-import { evaluateFormula } from '../engine/formulaEngine'
 import { applyConditionAffectors } from '../engine/conditionProcessor'
 import { applyRestAction } from '../engine/restProcessor'
 
 interface CharacterState {
   characters: Record<string, Character>
   activeCharacterId: string | null
-  effectiveStats: Record<string, Stat[]>
 
   loadCharacters: (campaignId: string) => Promise<void>
   setActiveCharacter: (id: string | null) => void
@@ -55,44 +52,9 @@ interface CharacterState {
   setLevel: (characterId: string, level: number) => void
 }
 
-function recomputeEffectiveStats(
-  character: Character,
-  conditionLibrary: Condition[]
-): Stat[] {
-  return applyConditionAffectors(
-    character.stats,
-    character.appliedConditions,
-    conditionLibrary
-  )
-}
-
-function cascadeAffectors(stats: Stat[], updatedStatId: string): Stat[] {
-  const graph = buildGraph(stats)
-  const downstreamIds = getDownstream(updatedStatId, graph)
-  if (downstreamIds.length === 0) return stats
-
-  const sortedIds = topologicalSort(downstreamIds, graph)
-  let currentStats = [...stats]
-
-  for (const statId of sortedIds) {
-    const stat = currentStats.find(s => s.id === statId)
-    if (!stat || stat.category !== 'derived' || !stat.formula) continue
-
-    const result = evaluateFormula(stat.formula, currentStats)
-    if (!result.error) {
-      currentStats = currentStats.map(s =>
-        s.id === statId ? { ...s, value: result.value } : s
-      )
-    }
-  }
-
-  return currentStats
-}
-
 export const useCharacterStore = create<CharacterState>((set, get) => ({
   characters: {},
   activeCharacterId: null,
-  effectiveStats: {},
 
   loadCharacters: async (campaignId) => {
     const list = await getCharactersByCampaign(campaignId)
@@ -128,13 +90,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
       ...data,
       id,
     }
-    set(state => ({
-      characters: { ...state.characters, [id]: character },
-      effectiveStats: {
-        ...state.effectiveStats,
-        [id]: character.stats,
-      },
-    }))
+    set(state => ({ characters: { ...state.characters, [id]: character } }))
     dbCreateCharacter(character)
     return character
   },
@@ -157,16 +113,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     set(state => {
       const character = state.characters[characterId]
       if (!character) return state
-
       const prevStat = character.stats.find(s => s.id === stat.id)
-
-      // Replace the stat
-      let newStats = character.stats.map(s => s.id === stat.id ? stat : s)
-
-      // Cascade affector recalculations
-      newStats = cascadeAffectors(newStats, stat.id)
-
-      // Append history entry
       const historyEntry: HistoryEntry = {
         id: generateId(),
         characterId,
@@ -177,31 +124,14 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
         previousValue: prevStat?.value,
         newValue: stat.value,
       }
-
       const updatedChar: Character = {
         ...character,
-        stats: newStats,
+        stats: character.stats.map(s => s.id === stat.id ? stat : s),
         history: [...character.history, historyEntry],
         updatedAt: now(),
       }
-
-      // Recompute effective stats — use empty condition library here;
-      // full recompute happens when conditionLibrary is available via applyCondition
-      const effectiveStatsForChar = applyConditionAffectors(
-        newStats,
-        updatedChar.appliedConditions,
-        [] // condition library not available here; effects cleared
-      )
-
       dbUpdateCharacter(characterId, updatedChar)
-
-      return {
-        characters: { ...state.characters, [characterId]: updatedChar },
-        effectiveStats: {
-          ...state.effectiveStats,
-          [characterId]: effectiveStatsForChar,
-        },
-      }
+      return { characters: { ...state.characters, [characterId]: updatedChar } }
     })
   },
 
@@ -215,13 +145,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
         updatedAt: now(),
       }
       dbUpdateCharacter(characterId, updatedChar)
-      return {
-        characters: { ...state.characters, [characterId]: updatedChar },
-        effectiveStats: {
-          ...state.effectiveStats,
-          [characterId]: updatedChar.stats,
-        },
-      }
+      return { characters: { ...state.characters, [characterId]: updatedChar } }
     })
   },
 
@@ -235,13 +159,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
         updatedAt: now(),
       }
       dbUpdateCharacter(characterId, updatedChar)
-      return {
-        characters: { ...state.characters, [characterId]: updatedChar },
-        effectiveStats: {
-          ...state.effectiveStats,
-          [characterId]: updatedChar.stats,
-        },
-      }
+      return { characters: { ...state.characters, [characterId]: updatedChar } }
     })
   },
 
@@ -415,17 +333,8 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
         updatedAt: now(),
       }
 
-      const effectiveStatsForChar = recomputeEffectiveStats(updatedChar, conditionLibrary)
-
       dbUpdateCharacter(characterId, updatedChar)
-
-      return {
-        characters: { ...state.characters, [characterId]: updatedChar },
-        effectiveStats: {
-          ...state.effectiveStats,
-          [characterId]: effectiveStatsForChar,
-        },
-      }
+      return { characters: { ...state.characters, [characterId]: updatedChar } }
     })
   },
 
@@ -455,17 +364,8 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
         updatedAt: now(),
       }
 
-      const effectiveStatsForChar = recomputeEffectiveStats(updatedChar, conditionLibrary)
-
       dbUpdateCharacter(characterId, updatedChar)
-
-      return {
-        characters: { ...state.characters, [characterId]: updatedChar },
-        effectiveStats: {
-          ...state.effectiveStats,
-          [characterId]: effectiveStatsForChar,
-        },
-      }
+      return { characters: { ...state.characters, [characterId]: updatedChar } }
     })
   },
 
@@ -492,17 +392,8 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
         updatedAt: now(),
       }
 
-      const effectiveStatsForChar = recomputeEffectiveStats(updatedChar, conditionLibrary)
-
       dbUpdateCharacter(characterId, updatedChar)
-
-      return {
-        characters: { ...state.characters, [characterId]: updatedChar },
-        effectiveStats: {
-          ...state.effectiveStats,
-          [characterId]: effectiveStatsForChar,
-        },
-      }
+      return { characters: { ...state.characters, [characterId]: updatedChar } }
     })
   },
 

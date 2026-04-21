@@ -8,29 +8,16 @@ import { StatRow } from '../stats/StatRow'
 import { StatEditSheet } from '../stats/StatEditSheet'
 
 export function StatsTab() {
-  const { character, effectiveStats, activeCharacterId } = useCharacter()
+  const { character, activeCharacterId } = useCharacter()
   const updateStat = useCharacterStore(s => s.updateStat)
 
   const [editingStat, setEditingStat] = useState<Stat | null | undefined>(undefined)
 
   if (!character || !activeCharacterId) {
-    return (
-      <div className="p-4">
-        <EmptyState title="No character loaded" />
-      </div>
-    )
+    return <div className="p-4"><EmptyState title="No character loaded" /></div>
   }
 
   const sortedStats = [...character.stats].sort((a, b) => a.order - b.order)
-
-  const getEffectiveValue = (stat: Stat): number | string | boolean => {
-    if (stat.category === 'resource') return stat.currentValue ?? 0
-    if (stat.category === 'boolean') return stat.value === true
-    if (stat.category === 'text') return typeof stat.value === 'string' ? stat.value : ''
-    const effective = effectiveStats.find(s => s.id === stat.id)
-    if (effective) return typeof effective.value === 'number' ? effective.value : Number(effective.value) || 0
-    return typeof stat.value === 'number' ? stat.value : Number(stat.value) || 0
-  }
 
   const handleReorder = (newStats: Stat[]) => {
     newStats.forEach((s, i) => {
@@ -51,10 +38,8 @@ export function StatsTab() {
             <StatRow
               key={stat.id}
               stat={stat}
-              effectiveValue={getEffectiveValue(stat)}
               onTap={() => setEditingStat(stat)}
               dragHandleProps={dragHandleProps}
-              characterId={activeCharacterId}
             />
           )}
         />

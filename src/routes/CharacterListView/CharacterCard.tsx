@@ -11,20 +11,11 @@ export interface CharacterCardProps {
 }
 
 function findHpStat(stats: Stat[]): Stat | undefined {
-  return stats.find(
-    (s) =>
-      s.name.toLowerCase().includes('hp') ||
-      s.name.toLowerCase().includes('hit points')
-  )
+  return stats.find(s => s.name.toLowerCase().includes('hp') || s.name.toLowerCase().includes('hit points'))
 }
 
 export function CharacterCard({ character, isOwner, onClick }: CharacterCardProps) {
   const hpStat = findHpStat(character.stats)
-  const hasHpResource =
-    hpStat?.category === 'resource' &&
-    hpStat.currentValue !== undefined &&
-    hpStat.maxValue !== undefined
-
   const visibleConditions = character.appliedConditions.slice(0, 3)
   const extraConditions = character.appliedConditions.length - 3
 
@@ -57,11 +48,8 @@ export function CharacterCard({ character, isOwner, onClick }: CharacterCardProp
             )}
           </div>
 
-          {/* HP */}
-          {hasHpResource && (
-            <p className="text-sm text-slate-300 mt-0.5">
-              ❤️ {hpStat!.currentValue}/{hpStat!.maxValue}
-            </p>
+          {hpStat && (
+            <p className="text-sm text-slate-300 mt-0.5">❤️ {hpStat.value}</p>
           )}
 
           {/* Conditions */}

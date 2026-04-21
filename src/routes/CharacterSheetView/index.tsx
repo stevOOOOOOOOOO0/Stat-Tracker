@@ -26,7 +26,7 @@ import { ItemEditSheet } from './items/ItemEditSheet'
 import { AbilityEditSheet } from './abilities/AbilityEditSheet'
 import { NoteEditSheet } from './biography/NoteEditSheet'
 import { HistoryLog } from './biography/HistoryLog'
-import type { RestAction, RestReset, RestResetMode, HistoryEntryType } from '../../types'
+import type { RestAction, RestReset, HistoryEntryType } from '../../types'
 import { generateId } from '../../lib/ids'
 import { now, formatRelative } from '../../lib/dates'
 
@@ -104,12 +104,11 @@ const CREATE_OPTIONS: { type: CreateType; label: string; icon: string; descripti
 interface NewRestActionForm {
   name: string
   resetStatId: string
-  resetMode: RestResetMode
   resetAmount: number
 }
 
 function emptyRestForm(): NewRestActionForm {
-  return { name: '', resetStatId: '', resetMode: 'full', resetAmount: 0 }
+  return { name: '', resetStatId: '', resetAmount: 0 }
 }
 
 // ─── Main view ───────────────────────────────────────────────────────────────
@@ -191,8 +190,7 @@ export default function CharacterSheetView() {
   const handleAddRestAction = () => {
     if (!addRestForm.name.trim() || !character) return
     const resets: RestReset[] = addRestForm.resetStatId
-      ? [{ statId: addRestForm.resetStatId, mode: addRestForm.resetMode,
-           amount: addRestForm.resetMode !== 'full' ? addRestForm.resetAmount : undefined }]
+      ? [{ statId: addRestForm.resetStatId, mode: 'fixed', amount: addRestForm.resetAmount }]
       : []
     const newRest: RestAction = {
       id: generateId(), characterId, name: addRestForm.name.trim(), resets,
@@ -203,17 +201,8 @@ export default function CharacterSheetView() {
   }
 
   const statOptions = character
-    ? [{ value: '', label: '— No stat —' },
-       ...character.stats
-         .filter((s) => s.category === 'resource' || s.category === 'base')
-         .map((s) => ({ value: s.id, label: s.name }))]
+    ? [{ value: '', label: '— No stat —' }, ...character.stats.map(s => ({ value: s.id, label: s.name }))]
     : [{ value: '', label: '— No stat —' }]
-
-  const resetModeOptions = [
-    { value: 'full',  label: 'Full restore' },
-    { value: 'fixed', label: 'Fixed amount' },
-    { value: 'roll',  label: 'Roll formula' },
-  ]
 
   return (
     <AppShell>
@@ -318,7 +307,6 @@ export default function CharacterSheetView() {
           isOpen={createItemOpen}
           onClose={() => setCreateItemOpen(false)}
           characterId={characterId}
-          stats={character?.stats ?? []}
         />
 
         <AbilityEditSheet
@@ -326,7 +314,6 @@ export default function CharacterSheetView() {
           isOpen={createAbilityOpen}
           onClose={() => setCreateAbilityOpen(false)}
           characterId={characterId}
-          stats={character?.stats ?? []}
         />
 
         <NoteEditSheet
@@ -365,10 +352,6 @@ export default function CharacterSheetView() {
                 <Select label="Stat to reset" value={addRestForm.resetStatId} options={statOptions}
                   onChange={(e) => setAddRestForm((f) => ({ ...f, resetStatId: e.target.value }))} />
                 {addRestForm.resetStatId && (
-                  <Select label="Reset mode" value={addRestForm.resetMode} options={resetModeOptions}
-                    onChange={(e) => setAddRestForm((f) => ({ ...f, resetMode: e.target.value as RestResetMode }))} />
-                )}
-                {addRestForm.resetStatId && addRestForm.resetMode === 'fixed' && (
                   <div className="flex flex-col items-center">
                     <NumberStepper value={addRestForm.resetAmount} min={0} label="Amount" size="sm"
                       onChange={(v) => setAddRestForm((f) => ({ ...f, resetAmount: v }))} />

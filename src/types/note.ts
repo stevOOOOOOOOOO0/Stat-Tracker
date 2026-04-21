@@ -3,7 +3,6 @@ export interface Note {
   characterId: string
   title: string
   body: string
-  tags: string[]
   createdAt: string
   updatedAt: string
 }

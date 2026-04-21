@@ -3,10 +3,8 @@ import { useCharacterStore } from '../store/characterStore'
 export function useCharacter() {
   const activeCharacterId = useCharacterStore(state => state.activeCharacterId)
   const characters = useCharacterStore(state => state.characters)
-  const effectiveStatsMap = useCharacterStore(state => state.effectiveStats)
 
   const character = activeCharacterId ? characters[activeCharacterId] ?? null : null
-  const effectiveStats = activeCharacterId ? effectiveStatsMap[activeCharacterId] ?? [] : []
 
   const setActiveCharacter = useCharacterStore(state => state.setActiveCharacter)
   const createCharacter = useCharacterStore(state => state.createCharacter)
@@ -35,7 +33,6 @@ export function useCharacter() {
 
   return {
     character,
-    effectiveStats,
     activeCharacterId,
     setActiveCharacter,
     createCharacter,

@@ -18,7 +18,6 @@ export function AbilitiesTab() {
     <div className="p-4">
       <AbilityList
         abilities={character.abilities}
-        stats={character.stats}
         characterId={activeCharacterId}
       />
     </div>

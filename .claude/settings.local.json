@@ -12,7 +12,10 @@
       "Bash(node -e \"import\\('./node_modules/marked/src/marked.cjs'\\).then\\(m => console.log\\(Object.keys\\(m.marked || m\\)\\)\\)\")",
       "Read(//c/c/Users/steph/Documents/Repositories/StatTracker/Stat-Tracker/node_modules/marked/src/**)",
       "Read(//c/c/Users/steph/Documents/Repositories/StatTracker/Stat-Tracker/node_modules/marked/**)",
-      "Read(//c/c/Users/steph/Documents/Repositories/StatTracker/Stat-Tracker/node_modules/mathjs/**)"
+      "Read(//c/c/Users/steph/Documents/Repositories/StatTracker/Stat-Tracker/node_modules/mathjs/**)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

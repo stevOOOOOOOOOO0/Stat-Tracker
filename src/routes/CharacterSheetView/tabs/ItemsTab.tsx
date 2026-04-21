@@ -23,11 +23,7 @@ export function ItemsTab() {
       <div className="border-t border-slate-700/50" />
 
       {/* Items section */}
-      <ItemList
-        items={character.items}
-        stats={character.stats}
-        characterId={activeCharacterId}
-      />
+      <ItemList items={character.items} characterId={activeCharacterId} />
     </div>
   )
 }
