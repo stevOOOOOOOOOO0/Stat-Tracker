@@ -3,17 +3,6 @@ import type { Stat } from '../types/stat'
 
 export const math = create(all, {})
 
-// Restrict to safe arithmetic operations only
-math.import(
-  {
-    import: function () { throw new Error('import is disabled') },
-    createUnit: function () { throw new Error('createUnit is disabled') },
-    evaluate: math.evaluate,
-    parse: math.parse,
-  },
-  { override: false }
-)
-
 /**
  * Converts a stat name to a valid JS identifier key.
  * Replaces spaces with underscores and strips non-alphanumeric/underscore chars.
