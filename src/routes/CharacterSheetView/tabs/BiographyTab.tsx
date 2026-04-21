@@ -3,7 +3,6 @@ import { useCharacter } from '../../../hooks/useCharacter'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { BiographySectionList } from '../biography/BiographySectionList'
 import { NoteList } from '../biography/NoteList'
-import { HistoryLog } from '../biography/HistoryLog'
 
 export function BiographyTab() {
   const { character, activeCharacterId } = useCharacter()
@@ -28,13 +27,6 @@ export function BiographyTab() {
       {character.notes.length > 0 && (
         <NoteList
           notes={character.notes}
-          characterId={activeCharacterId}
-        />
-      )}
-
-      {character.history.length > 0 && (
-        <HistoryLog
-          history={character.history}
           characterId={activeCharacterId}
         />
       )}

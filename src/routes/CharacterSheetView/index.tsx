@@ -26,11 +26,12 @@ import { CreateStatBlockSheet } from './stats/CreateStatBlockSheet'
 import { ItemEditSheet } from './items/ItemEditSheet'
 import { AbilityEditSheet } from './abilities/AbilityEditSheet'
 import { NoteEditSheet } from './biography/NoteEditSheet'
+import { HistoryLog } from './biography/HistoryLog'
 import type { RestAction, RestReset, RestResetMode } from '../../types'
 import { generateId } from '../../lib/ids'
 import { now } from '../../lib/dates'
 
-// ─── Section wrapper ─────────────────────────────────────────────────────────
+// ─── Section wrappers ────────────────────────────────────────────────────────
 
 interface SectionProps {
   title: string
@@ -46,6 +47,23 @@ function Section({ title, children }: SectionProps) {
         </span>
       </div>
       <div className="px-2 pb-3">{children}</div>
+    </div>
+  )
+}
+
+function CollapsibleSection({ title, children }: SectionProps) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border-b border-slate-800">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-slate-900 sticky top-0 z-10"
+      >
+        <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">{title}</span>
+        <span className="text-slate-500 text-sm" style={{ transform: open ? 'rotate(180deg)' : undefined, display: 'inline-block' }}>▼</span>
+      </button>
+      {open && <div className="px-2 pb-3">{children}</div>}
     </div>
   )
 }
@@ -247,12 +265,17 @@ export default function CharacterSheetView() {
 
           {character && (
             (character.biography?.sections?.length ?? 0) > 0 ||
-            character.notes.length > 0 ||
-            character.history.length > 0
+            character.notes.length > 0
           ) && (
-            <Section title="Biography, Notes & History">
+            <Section title="Biography & Notes">
               <BiographyTab />
             </Section>
+          )}
+
+          {character && character.history.length > 0 && (
+            <CollapsibleSection title="History">
+              <HistoryLog history={character.history} characterId={characterId} />
+            </CollapsibleSection>
           )}
 
         </div>
