@@ -15,7 +15,6 @@ import { buildGraph, detectCycle } from '../../../engine/affectorGraph'
 
 export interface StatEditSheetProps {
   stat: Stat | null
-  blockId: string
   isOpen: boolean
   onClose: () => void
   stats: Stat[]
@@ -23,40 +22,33 @@ export interface StatEditSheetProps {
 }
 
 const CATEGORIES: { value: StatCategory; label: string; desc: string }[] = [
-  { value: 'base', label: 'Base', desc: 'A numeric attribute (e.g. Strength)' },
-  { value: 'derived', label: 'Derived', desc: 'Computed from a formula' },
+  { value: 'base',     label: 'Base',     desc: 'A numeric attribute (e.g. Strength)' },
+  { value: 'derived',  label: 'Derived',  desc: 'Computed from a formula' },
   { value: 'resource', label: 'Resource', desc: 'Tracked value with max (e.g. HP)' },
-  { value: 'text', label: 'Text', desc: 'Free-text field (e.g. Alignment)' },
-  { value: 'boolean', label: 'Boolean', desc: 'True / False flag' },
+  { value: 'text',     label: 'Text',     desc: 'Free-text field (e.g. Alignment)' },
+  { value: 'boolean',  label: 'Boolean',  desc: 'True / False flag' },
 ]
 
-function buildDefaultStat(category: StatCategory, blockId: string, characterId: string, order: number): Stat {
+function buildDefaultStat(category: StatCategory, order: number): Stat {
   const base: Stat = {
     id: generateId(),
     name: '',
     category,
     value: category === 'boolean' ? false : category === 'text' ? '' : 0,
-    blockId,
     order,
   }
-  if (category === 'resource') {
-    return { ...base, currentValue: 0, maxValue: 0, min: 0 }
-  }
+  if (category === 'resource') return { ...base, currentValue: 0, maxValue: 0, min: 0 }
   return base
 }
 
-export function StatEditSheet({ stat, blockId, isOpen, onClose, stats, characterId }: StatEditSheetProps) {
-  const addStat = useCharacterStore(s => s.addStat)
+export function StatEditSheet({ stat, isOpen, onClose, stats, characterId }: StatEditSheetProps) {
+  const addStat    = useCharacterStore(s => s.addStat)
   const updateStat = useCharacterStore(s => s.updateStat)
   const removeStat = useCharacterStore(s => s.removeStat)
-  const updateStatBlock = useCharacterStore(s => s.updateStatBlock)
-  const characters = useCharacterStore(s => s.characters)
 
-  const [selectedCategory, setSelectedCategory] = useState<StatCategory | null>(
-    stat ? stat.category : null
-  )
-  const [draft, setDraft] = useState<Stat | null>(null)
-  const [showDesc, setShowDesc] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<StatCategory | null>(stat ? stat.category : null)
+  const [draft, setDraft]           = useState<Stat | null>(null)
+  const [showDesc, setShowDesc]     = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [maxFormulaStr, setMaxFormulaStr] = useState('')
 
@@ -77,78 +69,42 @@ export function StatEditSheet({ stat, blockId, isOpen, onClose, stats, character
 
   useEffect(() => {
     if (selectedCategory && !stat) {
-      const character = characters[characterId]
-      const order = character ? character.stats.filter(s => s.blockId === blockId).length : 0
-      setDraft(buildDefaultStat(selectedCategory, blockId, characterId, order))
+      setDraft(buildDefaultStat(selectedCategory, stats.length))
     }
-  }, [selectedCategory])
+  }, [selectedCategory]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasCycle = (): boolean => {
-    if (!draft || !draft.affectors || draft.affectors.length === 0) return false
-    const graph = buildGraph(stats)
-    return detectCycle(draft.affectors, draft.id, graph)
-  }
-
-  const cycleDetected = hasCycle()
+  const cycleDetected = (() => {
+    if (!draft || !draft.affectors?.length) return false
+    return detectCycle(draft.affectors, draft.id, buildGraph(stats))
+  })()
 
   const canSave = draft && draft.name.trim().length > 0 && !cycleDetected
 
   const handleSave = () => {
     if (!draft || !canSave) return
-
-    // Parse maxValue for resource
     let finalDraft = { ...draft }
     if (finalDraft.category === 'resource') {
       const parsed = parseFloat(maxFormulaStr)
-      if (!isNaN(parsed)) {
-        finalDraft = { ...finalDraft, maxValue: parsed }
-      } else if (maxFormulaStr.trim().length > 0) {
-        finalDraft = { ...finalDraft, maxValue: maxFormulaStr }
-      } else {
-        finalDraft = { ...finalDraft, maxValue: 0 }
-      }
+      finalDraft = { ...finalDraft, maxValue: !isNaN(parsed) ? parsed : maxFormulaStr.trim() || 0 }
     }
-
-    if (stat) {
-      updateStat(characterId, finalDraft)
-    } else {
-      addStat(characterId, finalDraft)
-      // Append statId to block's statIds
-      const character = characters[characterId]
-      if (character) {
-        const block = character.statBlocks.find(b => b.id === blockId)
-        if (block && !block.statIds.includes(finalDraft.id)) {
-          updateStatBlock(characterId, { ...block, statIds: [...block.statIds, finalDraft.id] })
-        }
-      }
-    }
+    if (stat) updateStat(characterId, finalDraft)
+    else addStat(characterId, finalDraft)
     onClose()
   }
 
   const handleDelete = () => {
     if (!stat) return
     removeStat(characterId, stat.id)
-    // Remove from block statIds
-    const character = characters[characterId]
-    if (character) {
-      const block = character.statBlocks.find(b => b.id === blockId)
-      if (block) {
-        updateStatBlock(characterId, { ...block, statIds: block.statIds.filter(id => id !== stat.id) })
-      }
-    }
     setConfirmDelete(false)
     onClose()
   }
 
-  const updateDraft = (updates: Partial<Stat>) => {
+  const updateDraft = (updates: Partial<Stat>) =>
     setDraft(prev => prev ? { ...prev, ...updates } : prev)
-  }
-
-  const title = stat ? 'Edit Stat' : 'New Stat'
 
   return (
     <>
-      <BottomSheet isOpen={isOpen} onClose={onClose} title={title}>
+      <BottomSheet isOpen={isOpen} onClose={onClose} title={stat ? 'Edit Stat' : 'New Stat'}>
         {!selectedCategory ? (
           <div className="space-y-3">
             <p className="text-sm text-slate-400 mb-4">Choose a stat category:</p>
@@ -168,7 +124,6 @@ export function StatEditSheet({ stat, blockId, isOpen, onClose, stats, character
           </div>
         ) : draft ? (
           <div className="space-y-4">
-            {/* Name */}
             <Input
               label="Name"
               value={draft.name}
@@ -177,7 +132,6 @@ export function StatEditSheet({ stat, blockId, isOpen, onClose, stats, character
               required
             />
 
-            {/* Description (collapsible) */}
             <div>
               <button
                 type="button"
@@ -199,7 +153,6 @@ export function StatEditSheet({ stat, blockId, isOpen, onClose, stats, character
               )}
             </div>
 
-            {/* Category-specific fields */}
             {draft.category === 'base' && (
               <>
                 <Input
@@ -303,36 +256,21 @@ export function StatEditSheet({ stat, blockId, isOpen, onClose, stats, character
               </div>
             )}
 
-            {/* Cycle warning */}
             {cycleDetected && (
               <div className="bg-red-900/30 border border-red-700 rounded-lg px-3 py-2">
                 <p className="text-red-400 text-sm">This would create a circular dependency.</p>
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex gap-3 pt-2">
               {stat && (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  type="button"
-                  onClick={() => setConfirmDelete(true)}
-                >
+                <Button variant="danger" size="sm" type="button" onClick={() => setConfirmDelete(true)}>
                   Delete
                 </Button>
               )}
               <div className="flex-1" />
-              <Button variant="ghost" size="sm" type="button" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                type="button"
-                onClick={handleSave}
-                disabled={!canSave}
-              >
+              <Button variant="ghost" size="sm" type="button" onClick={onClose}>Cancel</Button>
+              <Button variant="primary" size="sm" type="button" onClick={handleSave} disabled={!canSave}>
                 Save
               </Button>
             </div>

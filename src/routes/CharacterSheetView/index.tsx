@@ -22,7 +22,6 @@ import { ItemsTab } from './tabs/ItemsTab'
 import { AbilitiesTab } from './tabs/AbilitiesTab'
 import { BiographyTab } from './tabs/BiographyTab'
 import { StatEditSheet } from './stats/StatEditSheet'
-import { CreateStatBlockSheet } from './stats/CreateStatBlockSheet'
 import { ItemEditSheet } from './items/ItemEditSheet'
 import { AbilityEditSheet } from './abilities/AbilityEditSheet'
 import { NoteEditSheet } from './biography/NoteEditSheet'
@@ -90,15 +89,14 @@ function HistorySection({ history, characterId }: HistorySectionProps) {
 
 // ─── Create type picker ──────────────────────────────────────────────────────
 
-type CreateType = 'stat-block' | 'stat' | 'item' | 'ability' | 'bio-section' | 'note'
+type CreateType = 'stat' | 'item' | 'ability' | 'bio-section' | 'note'
 
 const CREATE_OPTIONS: { type: CreateType; label: string; icon: string; description: string }[] = [
-  { type: 'stat-block', label: 'Stat Block',      icon: '📋', description: 'A named group of stats' },
-  { type: 'stat',       label: 'Stat',            icon: '📊', description: 'HP, Strength, AC…' },
-  { type: 'item',       label: 'Item',            icon: '⚔️',  description: 'Weapon, potion, gear…' },
-  { type: 'ability',    label: 'Ability',         icon: '✨', description: 'Spell, skill, feature…' },
-  { type: 'bio-section',label: 'Biography Section',icon: '📖', description: 'Backstory, traits…' },
-  { type: 'note',       label: 'Note',            icon: '📝', description: 'Session notes, reminders…' },
+  { type: 'stat',        label: 'Stat',             icon: '📊', description: 'HP, Strength, AC…' },
+  { type: 'item',        label: 'Item',             icon: '⚔️',  description: 'Weapon, potion, gear…' },
+  { type: 'ability',     label: 'Ability',          icon: '✨', description: 'Spell, skill, feature…' },
+  { type: 'bio-section', label: 'Biography Section',icon: '📖', description: 'Backstory, traits…' },
+  { type: 'note',        label: 'Note',             icon: '📝', description: 'Session notes, reminders…' },
 ]
 
 // ─── Rest form ───────────────────────────────────────────────────────────────
@@ -124,8 +122,6 @@ export default function CharacterSheetView() {
   const loadCharacters    = useCharacterStore((s) => s.loadCharacters)
   const characters        = useCharacterStore((s) => s.characters)
   const updateCharacter   = useCharacterStore((s) => s.updateCharacter)
-  const addStatBlock      = useCharacterStore((s) => s.addStatBlock)
-
   const { character }                        = useCharacter()
   const { campaign, setActiveCampaign }      = useCampaign()
   const { conditionLibrary, appliedConditions } = useConditions()
@@ -140,10 +136,8 @@ export default function CharacterSheetView() {
   const [addRestForm,         setAddRestForm]               = useState<NewRestActionForm>(emptyRestForm())
 
   // Creation sub-sheet states
-  const [createStatBlockOpen, setCreateStatBlockOpen]       = useState(false)
-  const [createStatOpen,      setCreateStatOpen]            = useState(false)
-  const [createStatBlockId,   setCreateStatBlockId]         = useState('')
-  const [createItemOpen,      setCreateItemOpen]            = useState(false)
+  const [createStatOpen,  setCreateStatOpen]  = useState(false)
+  const [createItemOpen,  setCreateItemOpen]  = useState(false)
   const [createAbilityOpen,   setCreateAbilityOpen]         = useState(false)
   const [createNoteOpen,      setCreateNoteOpen]            = useState(false)
 
@@ -168,23 +162,7 @@ export default function CharacterSheetView() {
   // ── Create picker handler ──
   const handleCreatePick = (type: CreateType) => {
     setIsCreatePickerOpen(false)
-    if (type === 'stat-block') {
-      setCreateStatBlockOpen(true)
-    } else if (type === 'stat') {
-      // Ensure there's at least one stat block to add to
-      if (!character || character.statBlocks.length === 0) {
-        const blockId = generateId()
-        addStatBlock(characterId, {
-          id: blockId,
-          characterId,
-          name: 'General',
-          order: 0,
-          statIds: [],
-        })
-        setCreateStatBlockId(blockId)
-      } else {
-        setCreateStatBlockId(character.statBlocks[0].id)
-      }
+    if (type === 'stat') {
       setCreateStatOpen(true)
     } else if (type === 'item') {
       setCreateItemOpen(true)
@@ -265,7 +243,7 @@ export default function CharacterSheetView() {
         {/* ── Single scrollable sheet ── */}
         <div className="flex-1 overflow-y-auto pb-24">
 
-          {character && (character.statBlocks.length > 0 || character.stats.length > 0) && (
+          {character && character.stats.length > 0 && (
             <Section title="Stats">
               <StatsTab />
             </Section>
@@ -327,22 +305,13 @@ export default function CharacterSheetView() {
         </BottomSheet>
 
         {/* ── Creation sub-sheets ── */}
-        <CreateStatBlockSheet
-          isOpen={createStatBlockOpen}
-          onClose={() => setCreateStatBlockOpen(false)}
+        <StatEditSheet
+          stat={null}
+          isOpen={createStatOpen}
+          onClose={() => setCreateStatOpen(false)}
+          stats={character?.stats ?? []}
           characterId={characterId}
         />
-
-        {createStatBlockId && (
-          <StatEditSheet
-            stat={null}
-            blockId={createStatBlockId}
-            isOpen={createStatOpen}
-            onClose={() => setCreateStatOpen(false)}
-            stats={character?.stats ?? []}
-            characterId={characterId}
-          />
-        )}
 
         <ItemEditSheet
           item={null}

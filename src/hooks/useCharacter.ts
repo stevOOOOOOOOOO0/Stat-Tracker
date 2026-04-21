@@ -14,9 +14,6 @@ export function useCharacter() {
   const updateStat = useCharacterStore(state => state.updateStat)
   const addStat = useCharacterStore(state => state.addStat)
   const removeStat = useCharacterStore(state => state.removeStat)
-  const addStatBlock = useCharacterStore(state => state.addStatBlock)
-  const updateStatBlock = useCharacterStore(state => state.updateStatBlock)
-  const removeStatBlock = useCharacterStore(state => state.removeStatBlock)
   const addItem = useCharacterStore(state => state.addItem)
   const updateItem = useCharacterStore(state => state.updateItem)
   const removeItem = useCharacterStore(state => state.removeItem)
@@ -46,9 +43,6 @@ export function useCharacter() {
     updateStat,
     addStat,
     removeStat,
-    addStatBlock,
-    updateStatBlock,
-    removeStatBlock,
     addItem,
     updateItem,
     removeItem,

@@ -56,7 +56,6 @@ export function CreateCharacterSheet({ isOpen, onClose, campaignId }: CreateChar
         name: name.trim(),
         level,
         currency: [],
-        statBlocks: [],
         stats: [],
         items: [],
         abilities: [],

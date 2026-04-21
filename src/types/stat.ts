@@ -11,15 +11,6 @@ export interface Stat {
   max?: number | string
   formula?: string
   affectors?: string[]
-  blockId: string
   order: number
   description?: string
-}
-
-export interface StatBlock {
-  id: string
-  characterId: string
-  name: string
-  order: number
-  statIds: string[]
 }

@@ -1,4 +1,4 @@
-import type { Stat, StatBlock } from './stat'
+import type { Stat } from './stat'
 import type { Item } from './item'
 import type { Ability } from './ability'
 import type { CurrencyDenomination } from './currency'
@@ -16,7 +16,6 @@ export interface Character {
   ownerId?: string
   level: number
   currency: CurrencyDenomination[]
-  statBlocks: StatBlock[]
   stats: Stat[]
   items: Item[]
   abilities: Ability[]

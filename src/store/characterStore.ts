@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Character } from '../types/character'
-import type { Stat, StatBlock } from '../types/stat'
+import type { Stat } from '../types/stat'
 import type { Item } from '../types/item'
 import type { Ability } from '../types/ability'
 import type { Note } from '../types/note'
@@ -35,9 +35,6 @@ interface CharacterState {
   updateStat: (characterId: string, stat: Stat) => void
   addStat: (characterId: string, stat: Stat) => void
   removeStat: (characterId: string, statId: string) => void
-  addStatBlock: (characterId: string, block: StatBlock) => void
-  updateStatBlock: (characterId: string, block: StatBlock) => void
-  removeStatBlock: (characterId: string, blockId: string) => void
   addItem: (characterId: string, item: Item) => void
   updateItem: (characterId: string, item: Item) => void
   removeItem: (characterId: string, itemId: string) => void
@@ -118,7 +115,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
       name: data.name ?? 'Unnamed Character',
       level: data.level ?? 1,
       currency: data.currency ?? [],
-      statBlocks: data.statBlocks ?? [],
       stats: data.stats ?? [],
       items: data.items ?? [],
       abilities: data.abilities ?? [],
@@ -246,48 +242,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
           [characterId]: updatedChar.stats,
         },
       }
-    })
-  },
-
-  addStatBlock: (characterId, block) => {
-    set(state => {
-      const character = state.characters[characterId]
-      if (!character) return state
-      const updatedChar: Character = {
-        ...character,
-        statBlocks: [...character.statBlocks, block],
-        updatedAt: now(),
-      }
-      dbUpdateCharacter(characterId, updatedChar)
-      return { characters: { ...state.characters, [characterId]: updatedChar } }
-    })
-  },
-
-  updateStatBlock: (characterId, block) => {
-    set(state => {
-      const character = state.characters[characterId]
-      if (!character) return state
-      const updatedChar: Character = {
-        ...character,
-        statBlocks: character.statBlocks.map(b => b.id === block.id ? block : b),
-        updatedAt: now(),
-      }
-      dbUpdateCharacter(characterId, updatedChar)
-      return { characters: { ...state.characters, [characterId]: updatedChar } }
-    })
-  },
-
-  removeStatBlock: (characterId, blockId) => {
-    set(state => {
-      const character = state.characters[characterId]
-      if (!character) return state
-      const updatedChar: Character = {
-        ...character,
-        statBlocks: character.statBlocks.filter(b => b.id !== blockId),
-        updatedAt: now(),
-      }
-      dbUpdateCharacter(characterId, updatedChar)
-      return { characters: { ...state.characters, [characterId]: updatedChar } }
     })
   },
 
