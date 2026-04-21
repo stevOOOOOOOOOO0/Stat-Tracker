@@ -27,9 +27,9 @@ import { ItemEditSheet } from './items/ItemEditSheet'
 import { AbilityEditSheet } from './abilities/AbilityEditSheet'
 import { NoteEditSheet } from './biography/NoteEditSheet'
 import { HistoryLog } from './biography/HistoryLog'
-import type { RestAction, RestReset, RestResetMode } from '../../types'
+import type { RestAction, RestReset, RestResetMode, HistoryEntryType } from '../../types'
 import { generateId } from '../../lib/ids'
-import { now } from '../../lib/dates'
+import { now, formatRelative } from '../../lib/dates'
 
 // ─── Section wrappers ────────────────────────────────────────────────────────
 
@@ -51,8 +51,19 @@ function Section({ title, children }: SectionProps) {
   )
 }
 
-function CollapsibleSection({ title, children }: SectionProps) {
+const HISTORY_ICONS: Record<HistoryEntryType, string> = {
+  stat_change: '📊', rest: '💤', level_up: '⭐', item_used: '⚔️',
+  ability_used: '✨', condition_change: '🎭', currency_change: '💰', manual: '📝',
+}
+
+interface HistorySectionProps {
+  history: import('../../types').HistoryEntry[]
+  characterId: string
+}
+
+function HistorySection({ history, characterId }: HistorySectionProps) {
   const [open, setOpen] = useState(false)
+  const latest = history[history.length - 1]
   return (
     <div className="border-b border-slate-800">
       <button
@@ -60,10 +71,19 @@ function CollapsibleSection({ title, children }: SectionProps) {
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-4 py-3 bg-slate-900 sticky top-0 z-10"
       >
-        <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">{title}</span>
+        <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">History</span>
         <span className="text-slate-500 text-sm" style={{ transform: open ? 'rotate(180deg)' : undefined, display: 'inline-block' }}>▼</span>
       </button>
-      {open && <div className="px-2 pb-3">{children}</div>}
+      {!open && latest && (
+        <div className="px-4 py-2 flex gap-3 border-t border-slate-800/60">
+          <span className="text-base flex-shrink-0 mt-0.5">{HISTORY_ICONS[latest.type] ?? '📝'}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-slate-400 text-sm truncate">{latest.description}</p>
+            <p className="text-slate-600 text-xs">{formatRelative(latest.timestamp)}</p>
+          </div>
+        </div>
+      )}
+      {open && <div className="px-2 pb-3"><HistoryLog history={history} characterId={characterId} /></div>}
     </div>
   )
 }
@@ -273,9 +293,7 @@ export default function CharacterSheetView() {
           )}
 
           {character && character.history.length > 0 && (
-            <CollapsibleSection title="History">
-              <HistoryLog history={character.history} characterId={characterId} />
-            </CollapsibleSection>
+            <HistorySection history={character.history} characterId={characterId} />
           )}
 
         </div>
