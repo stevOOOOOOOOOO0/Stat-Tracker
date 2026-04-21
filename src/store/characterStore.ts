@@ -58,7 +58,6 @@ interface CharacterState {
   addCurrency: (characterId: string, denom: CurrencyDenomination) => void
   removeCurrency: (characterId: string, denomId: string) => void
   updateBiography: (characterId: string, biography: Biography) => void
-  updateXp: (characterId: string, xp: number) => void
   setLevel: (characterId: string, level: number) => void
 }
 
@@ -121,7 +120,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
       campaignId: data.campaignId ?? '',
       name: data.name ?? 'Unnamed Character',
       level: data.level ?? 1,
-      currentXp: data.currentXp ?? 0,
       currency: data.currency ?? [],
       statBlocks: data.statBlocks ?? [],
       stats: data.stats ?? [],
@@ -674,38 +672,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
       const updatedChar: Character = {
         ...character,
         biography,
-        updatedAt: now(),
-      }
-      dbUpdateCharacter(characterId, updatedChar)
-      return { characters: { ...state.characters, [characterId]: updatedChar } }
-    })
-  },
-
-  updateXp: (characterId, xp) => {
-    set(state => {
-      const character = state.characters[characterId]
-      if (!character) return state
-
-      const didLevelUp = character.xpThreshold !== undefined && xp >= character.xpThreshold
-      const history = [...character.history]
-
-      if (didLevelUp) {
-        history.push({
-          id: generateId(),
-          characterId,
-          timestamp: now(),
-          type: 'level_up',
-          description: `Leveled up to ${character.level + 1}`,
-          previousValue: character.level,
-          newValue: character.level + 1,
-        })
-      }
-
-      const updatedChar: Character = {
-        ...character,
-        currentXp: xp,
-        level: didLevelUp ? character.level + 1 : character.level,
-        history,
         updatedAt: now(),
       }
       dbUpdateCharacter(characterId, updatedChar)

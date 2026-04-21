@@ -9,7 +9,6 @@ import { useUIStore } from '../../store/uiStore'
 import { useCharacter } from '../../hooks/useCharacter'
 import { AppShell } from '../../components/layout/AppShell'
 import { PageHeader } from '../../components/layout/PageHeader'
-import { XpBar } from '../../components/shared/XpBar'
 import { BottomSheet } from '../../components/overlays/BottomSheet'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
@@ -230,13 +229,6 @@ export default function CharacterSheetView() {
             </>
           }
         />
-
-        {/* ── XP bar ── */}
-        {character && (
-          <div className="px-3 py-2 bg-slate-900 border-b border-slate-800">
-            <XpBar currentXp={character.currentXp} threshold={character.xpThreshold} level={character.level} />
-          </div>
-        )}
 
         {/* ── Condition chips ── */}
         {character && (

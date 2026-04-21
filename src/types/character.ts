@@ -16,8 +16,6 @@ export interface Character {
   avatarUrl?: string
   ownerId?: string
   level: number
-  currentXp: number
-  xpThreshold?: number
   currency: CurrencyDenomination[]
   statBlocks: StatBlock[]
   stats: Stat[]

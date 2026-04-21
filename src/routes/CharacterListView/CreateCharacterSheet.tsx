@@ -20,14 +20,12 @@ export function CreateCharacterSheet({ isOpen, onClose, campaignId }: CreateChar
 
   const [name, setName] = useState('')
   const [level, setLevel] = useState(1)
-  const [xpThreshold, setXpThreshold] = useState('')
   const [nameError, setNameError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   function resetForm() {
     setName('')
     setLevel(1)
-    setXpThreshold('')
     setNameError('')
     setIsSubmitting(false)
   }
@@ -50,7 +48,6 @@ export function CreateCharacterSheet({ isOpen, onClose, campaignId }: CreateChar
 
     const id = generateId()
     const timestamp = now()
-    const parsedXp = xpThreshold.trim() ? parseInt(xpThreshold.trim(), 10) : undefined
 
     try {
       await createCharacter({
@@ -58,8 +55,6 @@ export function CreateCharacterSheet({ isOpen, onClose, campaignId }: CreateChar
         campaignId,
         name: name.trim(),
         level,
-        currentXp: 0,
-        xpThreshold: parsedXp !== undefined && !isNaN(parsedXp) ? parsedXp : undefined,
         currency: [],
         statBlocks: [],
         stats: [],
@@ -112,17 +107,6 @@ export function CreateCharacterSheet({ isOpen, onClose, campaignId }: CreateChar
             />
           </div>
         </div>
-
-        {/* XP Threshold */}
-        <Input
-          label="XP Threshold"
-          type="number"
-          placeholder="Leave empty for milestone leveling"
-          value={xpThreshold}
-          onChange={(e) => setXpThreshold(e.target.value)}
-          min={0}
-          helper="XP needed to level up. Leave blank to use milestone leveling."
-        />
 
         <Button
           type="submit"

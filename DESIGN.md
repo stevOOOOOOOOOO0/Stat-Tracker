@@ -77,17 +77,6 @@ Currency is displayed as its own section within the Items & Currency tab. Change
 
 When triggered, all resets are applied at once and a single History entry is logged summarizing what was recovered.
 
-### Experience & Leveling
-
-Each character can optionally track progression:
-
-- **Current XP** and a configurable **XP threshold** for the next level
-- **Current Level** as a base stat (can be referenced by formulas in other stats)
-- A **level-up notification** when XP reaches or exceeds the threshold
-- Support for **milestone leveling** (manual level-up with no XP tracking)
-
-Level changes are recorded as notable History events.
-
 ### Character Biography
 
 A **Biography** is a structured set of long-form text fields attached to a character. Sections are fully customizable but common defaults include:
@@ -317,10 +306,6 @@ See [Key Capabilities — Currency](#currency) for full details. Currency denomi
 
 See [Key Capabilities — Rest & Recovery](#rest--recovery) for full details. Rest actions are character-defined batch resets that fire with a single tap.
 
-### Experience & Leveling
-
-See [Key Capabilities — Experience & Leveling](#experience--leveling) for full details. Level is a first-class stat referenceable in other formulas.
-
 ### Biography
 
 See [Key Capabilities — Character Biography](#character-biography) for full details. Biography sections are customizable long-form text fields for stable character identity information.
@@ -356,7 +341,6 @@ See [Key Capabilities — Initiative Tracker](#initiative-tracker) for full deta
 - [ ] Create and manage abilities with roll expressions, resource costs, and recharge conditions
 - [ ] Prepared/unprepared toggle on abilities
 - [ ] Rest & recovery actions: one-tap batch stat resets (short rest, long rest, etc.)
-- [ ] Experience and level tracking with configurable XP thresholds; milestone leveling option
 - [ ] Character biography with customizable long-form sections
 - [ ] Add freeform notes with titles and tags
 - [ ] Session notes: campaign-level shared notes
@@ -582,8 +566,6 @@ interface Character {
   avatarUrl?: string;
   ownerId?: string;         // null if no account (local-only)
   level: number;
-  currentXp: number;
-  xpThreshold?: number;     // null = milestone leveling
   currency: CurrencyDenomination[];
   statBlocks: StatBlock[];
   stats: Stat[];
@@ -661,7 +643,7 @@ interface Character {
 | Milestone | Scope |
 |---|---|
 | **M1 — Local MVP** | Campaigns, characters, custom stats with affectors, items, abilities, offline PWA |
-| **M2 — Character Depth** | Currency, rest actions, XP/leveling, biography, condition library |
+| **M2 — Character Depth** | Currency, rest actions, biography, condition library |
 | **M3 — Session Tools** | Notes & history, session notes, quick-access bar, search, dice calculator, dark mode |
 | **M4 — Accounts & Sync** | User accounts, cloud sync, multi-device support |
 | **M5 — Party Features** | Campaign sharing, read-only party view, party health overview, initiative tracker, real-time sync |

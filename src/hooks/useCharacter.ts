@@ -36,7 +36,6 @@ export function useCharacter() {
   const addCurrency = useCharacterStore(state => state.addCurrency)
   const removeCurrency = useCharacterStore(state => state.removeCurrency)
   const updateBiography = useCharacterStore(state => state.updateBiography)
-  const updateXp = useCharacterStore(state => state.updateXp)
   const setLevel = useCharacterStore(state => state.setLevel)
 
   return {
@@ -71,7 +70,6 @@ export function useCharacter() {
     addCurrency,
     removeCurrency,
     updateBiography,
-    updateXp,
     setLevel,
   }
 }
