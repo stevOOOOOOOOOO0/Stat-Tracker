@@ -65,7 +65,6 @@ export function CreateCharacterSheet({ isOpen, onClose, campaignId }: CreateChar
         biography: { characterId: id, sections: [] },
         notes: [],
         history: [],
-        usageRecords: [],
         createdAt: timestamp,
         updatedAt: timestamp,
       })

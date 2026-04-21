@@ -7,7 +7,6 @@ import type { AppliedCondition } from './condition'
 import type { Biography } from './biography'
 import type { Note } from './note'
 import type { HistoryEntry } from './history'
-import type { UsageRecord } from './usage'
 
 export interface Character {
   id: string
@@ -26,7 +25,6 @@ export interface Character {
   biography: Biography
   notes: Note[]
   history: HistoryEntry[]
-  usageRecords: UsageRecord[]
   createdAt: string
   updatedAt: string
 }

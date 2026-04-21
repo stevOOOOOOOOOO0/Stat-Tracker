@@ -17,7 +17,6 @@ import { NumberStepper } from '../../components/ui/NumberStepper'
 import { IconButton } from '../../components/ui/IconButton'
 import { SearchOverlay } from '../../components/overlays/SearchOverlay'
 import { ConditionChipBar } from './conditions/ConditionChipBar'
-import { QuickAccessBar } from './QuickAccessBar'
 import { StatsTab } from './tabs/StatsTab'
 import { ItemsTab } from './tabs/ItemsTab'
 import { AbilitiesTab } from './tabs/AbilitiesTab'
@@ -234,9 +233,6 @@ export default function CharacterSheetView() {
         {character && (
           <ConditionChipBar applied={appliedConditions} conditions={conditionLibrary} characterId={characterId} />
         )}
-
-        {/* ── Quick-access bar ── */}
-        {character && <QuickAccessBar characterId={characterId} />}
 
         {/* ── Single scrollable sheet ── */}
         <div className="flex-1 overflow-y-auto pb-24">

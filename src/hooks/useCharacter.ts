@@ -27,8 +27,6 @@ export function useCharacter() {
   const updateNote = useCharacterStore(state => state.updateNote)
   const removeNote = useCharacterStore(state => state.removeNote)
   const appendHistory = useCharacterStore(state => state.appendHistory)
-  const recordUsage = useCharacterStore(state => state.recordUsage)
-  const pinQuickAccess = useCharacterStore(state => state.pinQuickAccess)
   const applyCondition = useCharacterStore(state => state.applyCondition)
   const removeCondition = useCharacterStore(state => state.removeCondition)
   const triggerRestAction = useCharacterStore(state => state.triggerRestAction)
@@ -61,8 +59,6 @@ export function useCharacter() {
     updateNote,
     removeNote,
     appendHistory,
-    recordUsage,
-    pinQuickAccess,
     applyCondition,
     removeCondition,
     triggerRestAction,

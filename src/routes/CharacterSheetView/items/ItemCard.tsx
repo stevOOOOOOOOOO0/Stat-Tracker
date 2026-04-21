@@ -27,14 +27,12 @@ export const ItemCard = memo(function ItemCard({
   rollResult,
 }: ItemCardProps) {
   const appendHistory = useCharacterStore(s => s.appendHistory)
-  const recordUsage = useCharacterStore(s => s.recordUsage)
   const [menuOpen, setMenuOpen] = useState(false)
 
   const handleRoll = (label: string, formula: string) => {
     const result = evaluateRoll(formula, stats)
     const resultStr = `${label}: ${result.total} (${result.breakdown})`
     onRollResult?.(item.id, resultStr)
-    recordUsage(characterId, item.id, 'item')
     appendHistory(characterId, {
       id: generateId(),
       characterId,

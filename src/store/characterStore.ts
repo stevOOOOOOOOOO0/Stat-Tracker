@@ -5,7 +5,6 @@ import type { Item } from '../types/item'
 import type { Ability } from '../types/ability'
 import type { Note } from '../types/note'
 import type { HistoryEntry } from '../types/history'
-import type { UsageRecord, UsageEntityType } from '../types/usage'
 import type { AppliedCondition, Condition } from '../types/condition'
 import type { RestAction } from '../types/rest'
 import type { Biography } from '../types/biography'
@@ -49,8 +48,6 @@ interface CharacterState {
   updateNote: (characterId: string, note: Note) => void
   removeNote: (characterId: string, noteId: string) => void
   appendHistory: (characterId: string, entry: HistoryEntry) => void
-  recordUsage: (characterId: string, entityId: string, entityType: UsageEntityType) => void
-  pinQuickAccess: (characterId: string, entityId: string, isPinned: boolean) => void
   applyCondition: (characterId: string, appliedCondition: AppliedCondition, conditionLibrary: Condition[]) => void
   removeCondition: (characterId: string, conditionId: string, conditionLibrary: Condition[]) => void
   triggerRestAction: (characterId: string, restAction: RestAction, conditionLibrary: Condition[]) => void
@@ -130,7 +127,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
       biography: data.biography ?? { characterId: id, sections: [] },
       notes: data.notes ?? [],
       history: data.history ?? [],
-      usageRecords: data.usageRecords ?? [],
       createdAt: timestamp,
       updatedAt: timestamp,
       ...data,
@@ -240,7 +236,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
       const updatedChar: Character = {
         ...character,
         stats: character.stats.filter(s => s.id !== statId),
-        usageRecords: character.usageRecords.filter(u => u.entityId !== statId),
         updatedAt: now(),
       }
       dbUpdateCharacter(characterId, updatedChar)
@@ -429,54 +424,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
       const updatedChar: Character = {
         ...character,
         history: [...character.history, entry],
-        updatedAt: now(),
-      }
-      dbUpdateCharacter(characterId, updatedChar)
-      return { characters: { ...state.characters, [characterId]: updatedChar } }
-    })
-  },
-
-  recordUsage: (characterId, entityId, entityType) => {
-    set(state => {
-      const character = state.characters[characterId]
-      if (!character) return state
-
-      const existing = character.usageRecords.find(u => u.entityId === entityId)
-      let usageRecords: UsageRecord[]
-
-      if (existing) {
-        usageRecords = character.usageRecords.map(u =>
-          u.entityId === entityId ? { ...u, count: u.count + 1 } : u
-        )
-      } else {
-        usageRecords = [
-          ...character.usageRecords,
-          { entityId, entityType, count: 1, isPinned: false },
-        ]
-      }
-
-      const updatedChar: Character = {
-        ...character,
-        usageRecords,
-        updatedAt: now(),
-      }
-      dbUpdateCharacter(characterId, updatedChar)
-      return { characters: { ...state.characters, [characterId]: updatedChar } }
-    })
-  },
-
-  pinQuickAccess: (characterId, entityId, isPinned) => {
-    set(state => {
-      const character = state.characters[characterId]
-      if (!character) return state
-
-      const usageRecords = character.usageRecords.map(u =>
-        u.entityId === entityId ? { ...u, isPinned } : u
-      )
-
-      const updatedChar: Character = {
-        ...character,
-        usageRecords,
         updatedAt: now(),
       }
       dbUpdateCharacter(characterId, updatedChar)

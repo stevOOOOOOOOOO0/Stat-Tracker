@@ -29,7 +29,6 @@ export const AbilityCard = memo(function AbilityCard({
 }: AbilityCardProps) {
   const updateAbility = useCharacterStore(s => s.updateAbility)
   const appendHistory = useCharacterStore(s => s.appendHistory)
-  const recordUsage = useCharacterStore(s => s.recordUsage)
   const [menuOpen, setMenuOpen] = useState(false)
 
   const costStat = ability.resourceCostStatId
@@ -44,7 +43,6 @@ export const AbilityCard = memo(function AbilityCard({
     const result = evaluateRoll(formula, stats)
     const resultStr = `${label}: ${result.total} (${result.breakdown})`
     onRollResult?.(ability.id, resultStr)
-    recordUsage(characterId, ability.id, 'ability')
     appendHistory(characterId, {
       id: generateId(),
       characterId,
