@@ -22,6 +22,7 @@ export interface Character {
   biography: Biography
   notes: Note[]
   history: HistoryEntry[]
+  sheetOrder?: string[]
   createdAt: string
   updatedAt: string
 }

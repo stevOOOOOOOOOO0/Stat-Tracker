@@ -13,10 +13,7 @@ import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
 import { NumberStepper } from '../../components/ui/NumberStepper'
 import { ConditionChipBar } from './conditions/ConditionChipBar'
-import { StatsTab } from './tabs/StatsTab'
-import { ItemsTab } from './tabs/ItemsTab'
-import { AbilitiesTab } from './tabs/AbilitiesTab'
-import { BiographyTab } from './tabs/BiographyTab'
+import { CharacterSheetList } from './CharacterSheetList'
 import { StatEditSheet } from './stats/StatEditSheet'
 import { ItemEditSheet } from './items/ItemEditSheet'
 import { AbilityEditSheet } from './abilities/AbilityEditSheet'
@@ -25,7 +22,6 @@ import { HistoryLog } from './biography/HistoryLog'
 import type { RestAction, RestReset, HistoryEntryType } from '../../types'
 import { generateId } from '../../lib/ids'
 import { now, formatRelative } from '../../lib/dates'
-
 
 const HISTORY_ICONS: Record<HistoryEntryType, string> = {
   stat_change: '📊', rest: '💤', level_up: '⭐', item_used: '⚔️',
@@ -64,19 +60,15 @@ function HistorySection({ history, characterId }: HistorySectionProps) {
   )
 }
 
-// ─── Create type picker ──────────────────────────────────────────────────────
-
 type CreateType = 'stat' | 'item' | 'ability' | 'bio-section' | 'note'
 
 const CREATE_OPTIONS: { type: CreateType; label: string; icon: string; description: string }[] = [
-  { type: 'stat',        label: 'Stat',             icon: '📊', description: 'HP, Strength, AC…' },
-  { type: 'item',        label: 'Item',             icon: '⚔️',  description: 'Weapon, potion, gear…' },
-  { type: 'ability',     label: 'Ability',          icon: '✨', description: 'Spell, skill, feature…' },
-  { type: 'bio-section', label: 'Biography Section',icon: '📖', description: 'Backstory, traits…' },
-  { type: 'note',        label: 'Note',             icon: '📝', description: 'Session notes, reminders…' },
+  { type: 'stat',        label: 'Stat',              icon: '📊', description: 'HP, Strength, AC…' },
+  { type: 'item',        label: 'Item',              icon: '⚔️',  description: 'Weapon, potion, gear…' },
+  { type: 'ability',     label: 'Ability',           icon: '✨', description: 'Spell, skill, feature…' },
+  { type: 'bio-section', label: 'Biography Section', icon: '📖', description: 'Backstory, traits…' },
+  { type: 'note',        label: 'Note',              icon: '📝', description: 'Session notes, reminders…' },
 ]
-
-// ─── Rest form ───────────────────────────────────────────────────────────────
 
 interface NewRestActionForm {
   name: string
@@ -88,32 +80,28 @@ function emptyRestForm(): NewRestActionForm {
   return { name: '', resetStatId: '', resetAmount: 0 }
 }
 
-// ─── Main view ───────────────────────────────────────────────────────────────
-
 export default function CharacterSheetView() {
   const { campaignId, characterId } = useParams<{ campaignId: string; characterId: string }>()
   const navigate = useNavigate()
 
   const setActiveCharacter = useCharacterStore((s) => s.setActiveCharacter)
-  const loadCharacters    = useCharacterStore((s) => s.loadCharacters)
-  const characters        = useCharacterStore((s) => s.characters)
-  const updateCharacter   = useCharacterStore((s) => s.updateCharacter)
+  const loadCharacters     = useCharacterStore((s) => s.loadCharacters)
+  const characters         = useCharacterStore((s) => s.characters)
+  const updateCharacter    = useCharacterStore((s) => s.updateCharacter)
   const { character }                        = useCharacter()
   const { setActiveCampaign }                = useCampaign()
   const { conditionLibrary, appliedConditions } = useConditions()
   const { restActions, triggerRest }         = useRestActions()
 
-  // Sheet states
-  const [isCreatePickerOpen, setIsCreatePickerOpen]         = useState(false)
-  const [isRestSheetOpen,     setIsRestSheetOpen]           = useState(false)
-  const [isAddRestFormOpen,   setIsAddRestFormOpen]         = useState(false)
-  const [addRestForm,         setAddRestForm]               = useState<NewRestActionForm>(emptyRestForm())
+  const [isCreatePickerOpen, setIsCreatePickerOpen] = useState(false)
+  const [isRestSheetOpen,    setIsRestSheetOpen]    = useState(false)
+  const [isAddRestFormOpen,  setIsAddRestFormOpen]  = useState(false)
+  const [addRestForm,        setAddRestForm]        = useState<NewRestActionForm>(emptyRestForm())
 
-  // Creation sub-sheet states
-  const [createStatOpen,  setCreateStatOpen]  = useState(false)
-  const [createItemOpen,  setCreateItemOpen]  = useState(false)
-  const [createAbilityOpen,   setCreateAbilityOpen]         = useState(false)
-  const [createNoteOpen,      setCreateNoteOpen]            = useState(false)
+  const [createStatOpen,    setCreateStatOpen]    = useState(false)
+  const [createItemOpen,    setCreateItemOpen]    = useState(false)
+  const [createAbilityOpen, setCreateAbilityOpen] = useState(false)
+  const [createNoteOpen,    setCreateNoteOpen]    = useState(false)
 
   useEffect(() => {
     if (!characterId || !campaignId) return
@@ -133,7 +121,6 @@ export default function CharacterSheetView() {
     )
   }
 
-  // ── Create picker handler ──
   const handleCreatePick = (type: CreateType) => {
     setIsCreatePickerOpen(false)
     if (type === 'stat') {
@@ -143,7 +130,6 @@ export default function CharacterSheetView() {
     } else if (type === 'ability') {
       setCreateAbilityOpen(true)
     } else if (type === 'bio-section') {
-      // Add a biography section directly
       if (character) {
         const sections = character.biography?.sections ?? []
         updateCharacter(characterId, {
@@ -161,7 +147,6 @@ export default function CharacterSheetView() {
     }
   }
 
-  // ── Rest action handler ──
   const handleAddRestAction = () => {
     if (!addRestForm.name.trim() || !character) return
     const resets: RestReset[] = addRestForm.resetStatId
@@ -183,38 +168,26 @@ export default function CharacterSheetView() {
     <AppShell>
       <div className="flex flex-col h-screen overflow-hidden">
 
-        {/* ── Header ── */}
         <PageHeader
           title={character?.name ?? 'Loading...'}
           onBack={() => navigate(`/campaigns/${campaignId}`)}
+          onTitleChange={name => updateCharacter(characterId, { name })}
         />
 
-        {/* ── Condition chips ── */}
         {character && (
           <ConditionChipBar applied={appliedConditions} conditions={conditionLibrary} characterId={characterId} />
         )}
 
-        {/* ── Single scrollable sheet ── */}
         <div className="flex-1 overflow-y-auto pb-24">
-
-          {character && character.stats.length > 0 && <StatsTab />}
-
-          {character && character.items.length > 0 && <ItemsTab />}
-
-          {character && character.abilities.length > 0 && <AbilitiesTab />}
-
           {character && (
-            (character.biography?.sections?.length ?? 0) > 0 ||
-            character.notes.length > 0
-          ) && <BiographyTab />}
+            <CharacterSheetList character={character} characterId={characterId} />
+          )}
 
           {character && character.history.length > 0 && (
             <HistorySection history={character.history} characterId={characterId} />
           )}
-
         </div>
 
-        {/* ── Create FAB ── */}
         <button
           type="button"
           onClick={() => setIsCreatePickerOpen(true)}
@@ -224,7 +197,6 @@ export default function CharacterSheetView() {
           +
         </button>
 
-        {/* ── Create picker sheet ── */}
         <BottomSheet isOpen={isCreatePickerOpen} onClose={() => setIsCreatePickerOpen(false)} title="Create New">
           <div className="grid grid-cols-2 gap-3 pb-4">
             {CREATE_OPTIONS.map((opt) => (
@@ -242,7 +214,6 @@ export default function CharacterSheetView() {
           </div>
         </BottomSheet>
 
-        {/* ── Creation sub-sheets ── */}
         <StatEditSheet
           stat={null}
           isOpen={createStatOpen}
@@ -276,7 +247,6 @@ export default function CharacterSheetView() {
           characterId={characterId}
         />
 
-        {/* ── Rest sheet ── */}
         <BottomSheet
           isOpen={isRestSheetOpen}
           onClose={() => { setIsRestSheetOpen(false); setIsAddRestFormOpen(false); setAddRestForm(emptyRestForm()) }}
@@ -292,7 +262,6 @@ export default function CharacterSheetView() {
                 {ra.name}
               </Button>
             ))}
-
             {!isAddRestFormOpen ? (
               <Button variant="ghost" size="sm" onClick={() => setIsAddRestFormOpen(true)}>
                 + Add Rest Action

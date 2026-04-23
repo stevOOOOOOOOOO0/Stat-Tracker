@@ -20,6 +20,7 @@ export function NoteEditSheet({ note, isOpen, onClose, characterId }: NoteEditSh
   const addNote    = useCharacterStore(s => s.addNote)
   const updateNote = useCharacterStore(s => s.updateNote)
   const removeNote = useCharacterStore(s => s.removeNote)
+  const notesCount = useCharacterStore(s => s.characters[characterId]?.notes.length ?? 0)
 
   const [title, setTitle] = useState('')
   const [body, setBody]   = useState('')
@@ -40,7 +41,7 @@ export function NoteEditSheet({ note, isOpen, onClose, characterId }: NoteEditSh
     if (note) {
       updateNote(characterId, { ...note, title: title.trim(), body, updatedAt: timestamp })
     } else {
-      addNote(characterId, { id: generateId(), characterId, title: title.trim(), body, createdAt: timestamp, updatedAt: timestamp })
+      addNote(characterId, { id: generateId(), characterId, title: title.trim(), body, order: notesCount, createdAt: timestamp, updatedAt: timestamp })
     }
     onClose()
   }

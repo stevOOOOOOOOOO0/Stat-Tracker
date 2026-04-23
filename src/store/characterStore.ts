@@ -21,27 +21,43 @@ import { applyConditionAffectors } from '../engine/conditionProcessor'
 import { applyRestAction } from '../engine/restProcessor'
 
 function migrateCharacter(char: Character): Character {
-  return {
-    ...char,
-    stats: (char.stats ?? []).map(s => {
-      const raw = s as unknown as Record<string, unknown>
-      return {
-        id:          s.id,
-        name:        s.name,
-        order:       s.order ?? 0,
-        baseValue:   s.baseValue !== undefined ? s.baseValue : (raw['value'] as number) ?? 0,
-        minValue:    s.minValue,
-        maxValue:    s.maxValue,
-        isRollable:  s.isRollable ?? false,
-        diceCount:   s.diceCount ?? 1,
-        diceType:    s.diceType  ?? 'd20',
-        affectees: s.affectees
-          ?? ((raw['affecteeIds'] ?? raw['clientIds']) as string[] | undefined)
-            ?.map(id => ({ id, target: 'baseValue' as AffectTarget }))
-          ?? [],
-      }
-    }),
-  }
+  const sortedNotes = [...(char.notes ?? [])].sort((a, b) =>
+    a.createdAt.localeCompare(b.createdAt)
+  )
+  const migratedStats = (char.stats ?? []).map(s => {
+    const raw = s as unknown as Record<string, unknown>
+    return {
+      id:          s.id,
+      name:        s.name,
+      order:       s.order ?? 0,
+      baseValue:   s.baseValue !== undefined ? s.baseValue : (raw['value'] as number) ?? 0,
+      minValue:    s.minValue,
+      maxValue:    s.maxValue,
+      isRollable:  s.isRollable ?? false,
+      diceCount:   s.diceCount ?? 1,
+      diceType:    s.diceType  ?? 'd20',
+      affectees: s.affectees
+        ?? ((raw['affecteeIds'] ?? raw['clientIds']) as string[] | undefined)
+          ?.map(id => ({ id, target: 'baseValue' as AffectTarget }))
+        ?? [],
+    }
+  })
+  const migratedNotes = sortedNotes.map((n, i) => ({
+    ...n,
+    order: (n as unknown as Record<string, unknown>)['order'] !== undefined
+      ? (n as unknown as Record<string, unknown>)['order'] as number
+      : i,
+  }))
+
+  const sheetOrder = char.sheetOrder ?? [
+    ...[...migratedStats].sort((a, b) => a.order - b.order).map(s => s.id),
+    ...[...(char.items ?? [])].sort((a, b) => a.order - b.order).map(i => i.id),
+    ...[...(char.abilities ?? [])].sort((a, b) => a.order - b.order).map(a => a.id),
+    ...[...(char.biography?.sections ?? [])].sort((a, b) => a.order - b.order).map(s => s.id),
+    ...migratedNotes.sort((a, b) => a.order - b.order).map(n => n.id),
+  ]
+
+  return { ...char, stats: migratedStats, notes: migratedNotes, sheetOrder }
 }
 
 interface CharacterState {

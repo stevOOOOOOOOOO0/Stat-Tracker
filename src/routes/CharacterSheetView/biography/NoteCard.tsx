@@ -6,17 +6,25 @@ export interface NoteCardProps {
   note: Note
   onEdit: () => void
   onDelete: () => void
+  dragHandleProps?: React.HTMLAttributes<HTMLElement>
 }
 
-export const NoteCard = React.memo(function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
+export const NoteCard = React.memo(function NoteCard({ note, onEdit, onDelete, dragHandleProps }: NoteCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
     <div className="bg-slate-800 rounded-xl p-3 mb-2">
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start gap-2">
+        <span
+          {...dragHandleProps}
+          onClick={e => e.stopPropagation()}
+          className="text-slate-600 text-lg select-none flex-shrink-0 cursor-grab mt-0.5"
+          aria-label="Drag to reorder"
+        >≡</span>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-slate-100 text-sm leading-snug">{note.title}</p>
-          {note.body && <p className="text-slate-400 text-sm mt-1.5 line-clamp-2 leading-snug">{note.body}</p>}
+          {note.body && <p className="text-slate-400 text-sm mt-1 line-clamp-2 leading-snug">{note.body}</p>}
+          <p className="text-slate-500 text-xs mt-1">{formatRelative(note.updatedAt)}</p>
         </div>
         <div className="relative flex-shrink-0">
           <button type="button" onClick={() => setMenuOpen(v => !v)}
@@ -34,7 +42,6 @@ export const NoteCard = React.memo(function NoteCard({ note, onEdit, onDelete }:
           )}
         </div>
       </div>
-      <p className="text-slate-500 text-xs mt-2">{formatRelative(note.updatedAt)}</p>
     </div>
   )
 })

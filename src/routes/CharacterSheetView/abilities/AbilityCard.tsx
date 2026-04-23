@@ -5,14 +5,21 @@ export interface AbilityCardProps {
   ability: Ability
   onEdit: () => void
   onDelete: () => void
+  dragHandleProps?: React.HTMLAttributes<HTMLElement>
 }
 
-export const AbilityCard = memo(function AbilityCard({ ability, onEdit, onDelete }: AbilityCardProps) {
+export const AbilityCard = memo(function AbilityCard({ ability, onEdit, onDelete, dragHandleProps }: AbilityCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
     <div className="bg-slate-800 rounded-xl p-3 mb-2">
       <div className="flex items-start gap-2">
+        <span
+          {...dragHandleProps}
+          onClick={e => e.stopPropagation()}
+          className="text-slate-600 text-lg select-none flex-shrink-0 cursor-grab mt-0.5"
+          aria-label="Drag to reorder"
+        >≡</span>
         <span className="flex-1 font-semibold text-slate-100 text-sm">{ability.name}</span>
         <div className="relative flex-shrink-0">
           <button type="button" onClick={() => setMenuOpen(v => !v)} aria-label="Ability options"
@@ -32,7 +39,7 @@ export const AbilityCard = memo(function AbilityCard({ ability, onEdit, onDelete
           )}
         </div>
       </div>
-      {ability.description && <p className="text-slate-400 text-sm line-clamp-2 mt-1.5">{ability.description}</p>}
+      {ability.description && <p className="text-slate-400 text-sm line-clamp-2 mt-1.5 ml-6">{ability.description}</p>}
     </div>
   )
 })
