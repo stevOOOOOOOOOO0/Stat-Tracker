@@ -1,7 +1,6 @@
 import React from 'react'
 import { useCharacter } from '../../../hooks/useCharacter'
 import { EmptyState } from '../../../components/ui/EmptyState'
-import { CurrencyWallet } from '../items/CurrencyWallet'
 import { ItemList } from '../items/ItemList'
 
 export function ItemsTab() {
@@ -16,14 +15,8 @@ export function ItemsTab() {
   }
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Currency section */}
-      <CurrencyWallet currency={character.currency} characterId={activeCharacterId} />
-
-      <div className="border-t border-slate-700/50" />
-
-      {/* Items section */}
-      <ItemList items={character.items} characterId={activeCharacterId} />
+    <div className="p-4">
+      <ItemList items={character.items} characterId={activeCharacterId} allStats={character.stats} />
     </div>
   )
 }

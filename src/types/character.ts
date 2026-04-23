@@ -1,7 +1,6 @@
 import type { Stat } from './stat'
 import type { Item } from './item'
 import type { Ability } from './ability'
-import type { CurrencyDenomination } from './currency'
 import type { RestAction } from './rest'
 import type { AppliedCondition } from './condition'
 import type { Biography } from './biography'
@@ -15,7 +14,6 @@ export interface Character {
   avatarUrl?: string
   ownerId?: string
   level: number
-  currency: CurrencyDenomination[]
   stats: Stat[]
   items: Item[]
   abilities: Ability[]

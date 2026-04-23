@@ -12,6 +12,8 @@ export function useCharacter() {
   const updateStat = useCharacterStore(state => state.updateStat)
   const addStat = useCharacterStore(state => state.addStat)
   const removeStat = useCharacterStore(state => state.removeStat)
+  const incrementStat = useCharacterStore(state => state.incrementStat)
+  const decrementStat = useCharacterStore(state => state.decrementStat)
   const addItem = useCharacterStore(state => state.addItem)
   const updateItem = useCharacterStore(state => state.updateItem)
   const removeItem = useCharacterStore(state => state.removeItem)
@@ -25,9 +27,6 @@ export function useCharacter() {
   const applyCondition = useCharacterStore(state => state.applyCondition)
   const removeCondition = useCharacterStore(state => state.removeCondition)
   const triggerRestAction = useCharacterStore(state => state.triggerRestAction)
-  const updateCurrency = useCharacterStore(state => state.updateCurrency)
-  const addCurrency = useCharacterStore(state => state.addCurrency)
-  const removeCurrency = useCharacterStore(state => state.removeCurrency)
   const updateBiography = useCharacterStore(state => state.updateBiography)
   const setLevel = useCharacterStore(state => state.setLevel)
 
@@ -40,6 +39,8 @@ export function useCharacter() {
     updateStat,
     addStat,
     removeStat,
+    incrementStat,
+    decrementStat,
     addItem,
     updateItem,
     removeItem,
@@ -53,9 +54,6 @@ export function useCharacter() {
     applyCondition,
     removeCondition,
     triggerRestAction,
-    updateCurrency,
-    addCurrency,
-    removeCurrency,
     updateBiography,
     setLevel,
   }

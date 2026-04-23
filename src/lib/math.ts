@@ -12,7 +12,7 @@ export function buildStatScope(stats: Stat[]): Record<string, number> {
   for (const stat of stats) {
     const key = statNameToKey(stat.name)
     if (!key) continue
-    scope[key] = stat.value
+    scope[key] = stat.baseValue
   }
   return scope
 }

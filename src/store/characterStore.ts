@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Character } from '../types/character'
-import type { Stat } from '../types/stat'
+import type { Stat, AffectTarget } from '../types/stat'
 import type { Item } from '../types/item'
 import type { Ability } from '../types/ability'
 import type { Note } from '../types/note'
@@ -8,7 +8,6 @@ import type { HistoryEntry } from '../types/history'
 import type { AppliedCondition, Condition } from '../types/condition'
 import type { RestAction } from '../types/rest'
 import type { Biography } from '../types/biography'
-import type { CurrencyDenomination } from '../types/currency'
 import {
   getCharactersByCampaign,
   getCharacter as dbGetCharacter,
@@ -21,6 +20,30 @@ import { now } from '../lib/dates'
 import { applyConditionAffectors } from '../engine/conditionProcessor'
 import { applyRestAction } from '../engine/restProcessor'
 
+function migrateCharacter(char: Character): Character {
+  return {
+    ...char,
+    stats: (char.stats ?? []).map(s => {
+      const raw = s as unknown as Record<string, unknown>
+      return {
+        id:          s.id,
+        name:        s.name,
+        order:       s.order ?? 0,
+        baseValue:   s.baseValue !== undefined ? s.baseValue : (raw['value'] as number) ?? 0,
+        minValue:    s.minValue,
+        maxValue:    s.maxValue,
+        isRollable:  s.isRollable ?? false,
+        diceCount:   s.diceCount ?? 1,
+        diceType:    s.diceType  ?? 'd20',
+        affectees: s.affectees
+          ?? ((raw['affecteeIds'] ?? raw['clientIds']) as string[] | undefined)
+            ?.map(id => ({ id, target: 'baseValue' as AffectTarget }))
+          ?? [],
+      }
+    }),
+  }
+}
+
 interface CharacterState {
   characters: Record<string, Character>
   activeCharacterId: string | null
@@ -29,9 +52,11 @@ interface CharacterState {
   setActiveCharacter: (id: string | null) => void
   createCharacter: (data: Partial<Character>) => Promise<Character>
   updateCharacter: (id: string, updates: Partial<Character>) => Promise<void>
-  updateStat: (characterId: string, stat: Stat) => void
-  addStat: (characterId: string, stat: Stat) => void
+  updateStat: (characterId: string, stat: Stat, affectorEntries?: { statId: string; target: AffectTarget }[]) => void
+  addStat: (characterId: string, stat: Stat, affectorEntries?: { statId: string; target: AffectTarget }[]) => void
   removeStat: (characterId: string, statId: string) => void
+  incrementStat: (characterId: string, statId: string) => void
+  decrementStat: (characterId: string, statId: string) => void
   addItem: (characterId: string, item: Item) => void
   updateItem: (characterId: string, item: Item) => void
   removeItem: (characterId: string, itemId: string) => void
@@ -45,9 +70,6 @@ interface CharacterState {
   applyCondition: (characterId: string, appliedCondition: AppliedCondition, conditionLibrary: Condition[]) => void
   removeCondition: (characterId: string, conditionId: string, conditionLibrary: Condition[]) => void
   triggerRestAction: (characterId: string, restAction: RestAction, conditionLibrary: Condition[]) => void
-  updateCurrency: (characterId: string, denomId: string, amount: number) => void
-  addCurrency: (characterId: string, denom: CurrencyDenomination) => void
-  removeCurrency: (characterId: string, denomId: string) => void
   updateBiography: (characterId: string, biography: Biography) => void
   setLevel: (characterId: string, level: number) => void
 }
@@ -60,7 +82,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     const list = await getCharactersByCampaign(campaignId)
     const map: Record<string, Character> = {}
     for (const char of list) {
-      map[char.id] = char
+      map[char.id] = migrateCharacter(char)
     }
     set({ characters: map })
   },
@@ -76,7 +98,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
       campaignId: data.campaignId ?? '',
       name: data.name ?? 'Unnamed Character',
       level: data.level ?? 1,
-      currency: data.currency ?? [],
       stats: data.stats ?? [],
       items: data.items ?? [],
       abilities: data.abilities ?? [],
@@ -109,7 +130,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     if (char) dbUpdateCharacter(id, char)
   },
 
-  updateStat: (characterId, stat) => {
+  updateStat: (characterId, stat, affectorEntries) => {
     set(state => {
       const character = state.characters[characterId]
       if (!character) return state
@@ -121,29 +142,38 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
         type: 'stat_change',
         description: `${stat.name} changed`,
         entityId: stat.id,
-        previousValue: prevStat?.value,
-        newValue: stat.value,
+        previousValue: prevStat?.baseValue,
+        newValue: stat.baseValue,
       }
-      const updatedChar: Character = {
-        ...character,
-        stats: character.stats.map(s => s.id === stat.id ? stat : s),
-        history: [...character.history, historyEntry],
-        updatedAt: now(),
+      let stats = character.stats.map(s => s.id === stat.id ? stat : s)
+      // Sync other stats' affectees arrays to match the declared affectorEntries for this stat.
+      if (affectorEntries !== undefined) {
+        stats = stats.map(s => {
+          if (s.id === stat.id) return s
+          const withoutThis = (s.affectees ?? []).filter(e => e.id !== stat.id)
+          const newEntries = affectorEntries.filter(e => e.statId === s.id).map(e => ({ id: stat.id, target: e.target }))
+          return { ...s, affectees: [...withoutThis, ...newEntries] }
+        })
       }
+      const updatedChar: Character = { ...character, stats, history: [...character.history, historyEntry], updatedAt: now() }
       dbUpdateCharacter(characterId, updatedChar)
       return { characters: { ...state.characters, [characterId]: updatedChar } }
     })
   },
 
-  addStat: (characterId, stat) => {
+  addStat: (characterId, stat, affectorEntries) => {
     set(state => {
       const character = state.characters[characterId]
       if (!character) return state
-      const updatedChar: Character = {
-        ...character,
-        stats: [...character.stats, stat],
-        updatedAt: now(),
+      let stats = [...character.stats, stat]
+      if (affectorEntries?.length) {
+        stats = stats.map(s => {
+          const newEntries = affectorEntries.filter(e => e.statId === s.id).map(e => ({ id: stat.id, target: e.target }))
+          if (!newEntries.length) return s
+          return { ...s, affectees: [...(s.affectees ?? []), ...newEntries] }
+        })
       }
+      const updatedChar: Character = { ...character, stats, updatedAt: now() }
       dbUpdateCharacter(characterId, updatedChar)
       return { characters: { ...state.characters, [characterId]: updatedChar } }
     })
@@ -156,6 +186,82 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
       const updatedChar: Character = {
         ...character,
         stats: character.stats.filter(s => s.id !== statId),
+        updatedAt: now(),
+      }
+      dbUpdateCharacter(characterId, updatedChar)
+      return { characters: { ...state.characters, [characterId]: updatedChar } }
+    })
+  },
+
+  incrementStat: (characterId, statId) => {
+    set(state => {
+      const character = state.characters[characterId]
+      if (!character) return state
+      const stat = character.stats.find(s => s.id === statId)
+      if (!stat) return state
+      const derivedMax = stat.maxValue !== undefined
+        ? stat.maxValue + character.stats.reduce((sum, s) => {
+            if (s.id === statId) return sum
+            const e = (s.affectees ?? []).find(e => e.id === statId && e.target === 'maxValue')
+            return e ? sum + s.baseValue : sum
+          }, 0)
+        : undefined
+      const newValue = derivedMax !== undefined
+        ? Math.min(derivedMax, stat.baseValue + 1)
+        : stat.baseValue + 1
+      const updatedStat = { ...stat, baseValue: newValue }
+      const historyEntry: HistoryEntry = {
+        id: generateId(),
+        characterId,
+        timestamp: now(),
+        type: 'stat_change',
+        description: `${stat.name}: ${stat.baseValue} → ${newValue}`,
+        entityId: statId,
+        previousValue: stat.baseValue,
+        newValue,
+      }
+      const updatedChar: Character = {
+        ...character,
+        stats: character.stats.map(s => s.id === statId ? updatedStat : s),
+        history: [...character.history, historyEntry],
+        updatedAt: now(),
+      }
+      dbUpdateCharacter(characterId, updatedChar)
+      return { characters: { ...state.characters, [characterId]: updatedChar } }
+    })
+  },
+
+  decrementStat: (characterId, statId) => {
+    set(state => {
+      const character = state.characters[characterId]
+      if (!character) return state
+      const stat = character.stats.find(s => s.id === statId)
+      if (!stat) return state
+      const derivedMin = stat.minValue !== undefined
+        ? stat.minValue + character.stats.reduce((sum, s) => {
+            if (s.id === statId) return sum
+            const e = (s.affectees ?? []).find(e => e.id === statId && e.target === 'minValue')
+            return e ? sum + s.baseValue : sum
+          }, 0)
+        : undefined
+      const newValue = derivedMin !== undefined
+        ? Math.max(derivedMin, stat.baseValue - 1)
+        : stat.baseValue - 1
+      const updatedStat = { ...stat, baseValue: newValue }
+      const historyEntry: HistoryEntry = {
+        id: generateId(),
+        characterId,
+        timestamp: now(),
+        type: 'stat_change',
+        description: `${stat.name}: ${stat.baseValue} → ${newValue}`,
+        entityId: statId,
+        previousValue: stat.baseValue,
+        newValue,
+      }
+      const updatedChar: Character = {
+        ...character,
+        stats: character.stats.map(s => s.id === statId ? updatedStat : s),
+        history: [...character.history, historyEntry],
         updatedAt: now(),
       }
       dbUpdateCharacter(characterId, updatedChar)
@@ -392,66 +498,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
         updatedAt: now(),
       }
 
-      dbUpdateCharacter(characterId, updatedChar)
-      return { characters: { ...state.characters, [characterId]: updatedChar } }
-    })
-  },
-
-  updateCurrency: (characterId, denomId, amount) => {
-    set(state => {
-      const character = state.characters[characterId]
-      if (!character) return state
-
-      const prevDenom = character.currency.find(c => c.id === denomId)
-      const currency = character.currency.map(c =>
-        c.id === denomId ? { ...c, amount } : c
-      )
-
-      const historyEntry: HistoryEntry = {
-        id: generateId(),
-        characterId,
-        timestamp: now(),
-        type: 'currency_change',
-        description: `Currency updated: ${prevDenom?.name ?? denomId}`,
-        entityId: denomId,
-        previousValue: prevDenom?.amount,
-        newValue: amount,
-      }
-
-      const updatedChar: Character = {
-        ...character,
-        currency,
-        history: [...character.history, historyEntry],
-        updatedAt: now(),
-      }
-      dbUpdateCharacter(characterId, updatedChar)
-      return { characters: { ...state.characters, [characterId]: updatedChar } }
-    })
-  },
-
-  addCurrency: (characterId, denom) => {
-    set(state => {
-      const character = state.characters[characterId]
-      if (!character) return state
-      const updatedChar: Character = {
-        ...character,
-        currency: [...character.currency, denom],
-        updatedAt: now(),
-      }
-      dbUpdateCharacter(characterId, updatedChar)
-      return { characters: { ...state.characters, [characterId]: updatedChar } }
-    })
-  },
-
-  removeCurrency: (characterId, denomId) => {
-    set(state => {
-      const character = state.characters[characterId]
-      if (!character) return state
-      const updatedChar: Character = {
-        ...character,
-        currency: character.currency.filter(c => c.id !== denomId),
-        updatedAt: now(),
-      }
       dbUpdateCharacter(characterId, updatedChar)
       return { characters: { ...state.characters, [characterId]: updatedChar } }
     })

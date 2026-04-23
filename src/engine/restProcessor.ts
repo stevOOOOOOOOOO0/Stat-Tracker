@@ -9,7 +9,7 @@ export function applyRestAction(character: Character, restAction: RestAction): S
     const stat = statsMap.get(reset.statId)
     if (!stat) continue
     const amount = reset.amount ?? 0
-    statsMap.set(reset.statId, { ...stat, value: stat.value + amount })
+    statsMap.set(reset.statId, { ...stat, baseValue: stat.baseValue + amount })
   }
 
   return Array.from(statsMap.values())

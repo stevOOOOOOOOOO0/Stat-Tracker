@@ -5,7 +5,6 @@ export type HistoryEntryType =
   | 'rest'
   | 'level_up'
   | 'condition_change'
-  | 'currency_change'
   | 'manual'
 
 export interface HistoryEntry {

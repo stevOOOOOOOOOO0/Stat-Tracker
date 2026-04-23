@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import type { Ability } from '../../../types'
+import type { Ability, Stat } from '../../../types'
 import { BottomSheet } from '../../../components/overlays/BottomSheet'
 import { ConfirmDialog } from '../../../components/overlays/ConfirmDialog'
 import { Button } from '../../../components/ui/Button'
@@ -13,9 +13,10 @@ export interface AbilityEditSheetProps {
   isOpen: boolean
   onClose: () => void
   characterId: string
+  allStats?: Stat[]
 }
 
-export function AbilityEditSheet({ ability, isOpen, onClose, characterId }: AbilityEditSheetProps) {
+export function AbilityEditSheet({ ability, isOpen, onClose, characterId, allStats = [] }: AbilityEditSheetProps) {
   const addAbility    = useCharacterStore(s => s.addAbility)
   const updateAbility = useCharacterStore(s => s.updateAbility)
   const removeAbility = useCharacterStore(s => s.removeAbility)
@@ -60,6 +61,22 @@ export function AbilityEditSheet({ ability, isOpen, onClose, characterId }: Abil
       <BottomSheet isOpen={isOpen} onClose={onClose} title={ability ? 'Edit Ability' : 'New Ability'}>
         <div className="space-y-4">
           <Input label="Name" value={name} onChange={e => setName(e.target.value)} placeholder="Ability name" required autoFocus />
+          {ability && (() => {
+            const affectingStats = allStats.filter(s => (s.affectees ?? []).some(e => e.id === ability.id))
+            return affectingStats.length > 0 ? (
+              <div>
+                <p className="text-sm font-medium text-slate-300 mb-2">Affectors</p>
+                <div className="space-y-1">
+                  {affectingStats.map(s => (
+                    <div key={s.id} className="flex items-center gap-2 bg-slate-700/50 rounded-lg px-3 py-2">
+                      <span className="text-xs text-slate-500 uppercase tracking-wide flex-shrink-0">stat</span>
+                      <span className="text-slate-300 text-sm">{s.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null
+          })()}
           <Textarea label="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe this ability..." rows={4} />
           <div className="flex gap-3 pt-2">
             {ability && <Button variant="danger" size="sm" type="button" onClick={() => setConfirmDelete(true)}>Delete</Button>}

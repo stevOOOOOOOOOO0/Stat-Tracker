@@ -50,7 +50,7 @@ export function PartyHealthPanel({ characters }: PartyHealthPanelProps) {
               >
                 <span className="text-slate-200 text-sm flex-1 truncate">{character.name}</span>
                 {hpStat ? (
-                  <span className="text-sm font-medium tabular-nums text-green-400">{hpStat.value}</span>
+                  <span className="text-sm font-medium tabular-nums text-green-400">{hpStat.baseValue}</span>
                 ) : (
                   <span className="text-slate-500 text-sm">—</span>
                 )}

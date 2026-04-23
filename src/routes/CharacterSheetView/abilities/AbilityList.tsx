@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import type { Ability } from '../../../types'
+import type { Ability, Stat } from '../../../types'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { ConfirmDialog } from '../../../components/overlays/ConfirmDialog'
 import { useCharacterStore } from '../../../store/characterStore'
@@ -9,9 +9,10 @@ import { AbilityEditSheet } from './AbilityEditSheet'
 export interface AbilityListProps {
   abilities: Ability[]
   characterId: string
+  allStats?: Stat[]
 }
 
-export function AbilityList({ abilities, characterId }: AbilityListProps) {
+export function AbilityList({ abilities, characterId, allStats = [] }: AbilityListProps) {
   const removeAbility = useCharacterStore(s => s.removeAbility)
 
   const [editingAbility, setEditingAbility]   = useState<Ability | null>(null)
@@ -46,6 +47,7 @@ export function AbilityList({ abilities, characterId }: AbilityListProps) {
         isOpen={editingAbility !== null}
         onClose={() => setEditingAbility(null)}
         characterId={characterId}
+        allStats={allStats}
       />
 
       <ConfirmDialog

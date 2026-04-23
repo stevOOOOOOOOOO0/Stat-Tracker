@@ -17,7 +17,6 @@ const ENTRY_ICONS: Record<HistoryEntryType, string> = {
   item_used: '⚔️',
   ability_used: '✨',
   condition_change: '🎭',
-  currency_change: '💰',
   manual: '📝',
 }
 

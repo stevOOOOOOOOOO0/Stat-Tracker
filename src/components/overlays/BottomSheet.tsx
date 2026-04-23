@@ -6,9 +6,10 @@ export interface BottomSheetProps {
   onClose: () => void
   title?: string
   children: React.ReactNode
+  footer?: React.ReactNode
 }
 
-export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetProps) {
+export function BottomSheet({ isOpen, onClose, title, children, footer }: BottomSheetProps) {
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
 
@@ -66,6 +67,13 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
 
         {/* Content */}
         <div className="overflow-y-auto flex-1 p-4">{children}</div>
+
+        {/* Sticky footer */}
+        {footer && (
+          <div className="flex-shrink-0 border-t border-slate-700 px-4 py-3">
+            {footer}
+          </div>
+        )}
       </div>
     </>,
     document.body

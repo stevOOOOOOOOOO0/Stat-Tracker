@@ -15,7 +15,7 @@ export function applyConditionAffectors(
     for (const rule of condition.affectorRules) {
       const stat = statsMap.get(rule.statId)
       if (!stat || typeof rule.modifier !== 'number') continue
-      statsMap.set(rule.statId, { ...stat, value: stat.value + rule.modifier })
+      statsMap.set(rule.statId, { ...stat, baseValue: stat.baseValue + rule.modifier })
     }
   }
 

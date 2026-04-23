@@ -4,8 +4,6 @@ import { useCharacterStore } from '../../store/characterStore'
 import { useCampaign } from '../../hooks/useCampaign'
 import { useConditions } from '../../hooks/useConditions'
 import { useRestActions } from '../../hooks/useRestActions'
-import { useExport } from '../../hooks/useExport'
-import { useUIStore } from '../../store/uiStore'
 import { useCharacter } from '../../hooks/useCharacter'
 import { AppShell } from '../../components/layout/AppShell'
 import { PageHeader } from '../../components/layout/PageHeader'
@@ -14,8 +12,6 @@ import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
 import { NumberStepper } from '../../components/ui/NumberStepper'
-import { IconButton } from '../../components/ui/IconButton'
-import { SearchOverlay } from '../../components/overlays/SearchOverlay'
 import { ConditionChipBar } from './conditions/ConditionChipBar'
 import { StatsTab } from './tabs/StatsTab'
 import { ItemsTab } from './tabs/ItemsTab'
@@ -30,29 +26,10 @@ import type { RestAction, RestReset, HistoryEntryType } from '../../types'
 import { generateId } from '../../lib/ids'
 import { now, formatRelative } from '../../lib/dates'
 
-// ─── Section wrappers ────────────────────────────────────────────────────────
-
-interface SectionProps {
-  title: string
-  children: React.ReactNode
-}
-
-function Section({ title, children }: SectionProps) {
-  return (
-    <div className="border-b border-slate-800">
-      <div className="px-4 py-3 bg-slate-900 sticky top-0 z-10">
-        <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-          {title}
-        </span>
-      </div>
-      <div className="px-2 pb-3">{children}</div>
-    </div>
-  )
-}
 
 const HISTORY_ICONS: Record<HistoryEntryType, string> = {
   stat_change: '📊', rest: '💤', level_up: '⭐', item_used: '⚔️',
-  ability_used: '✨', condition_change: '🎭', currency_change: '💰', manual: '📝',
+  ability_used: '✨', condition_change: '🎭', manual: '📝',
 }
 
 interface HistorySectionProps {
@@ -64,7 +41,7 @@ function HistorySection({ history, characterId }: HistorySectionProps) {
   const [open, setOpen] = useState(false)
   const latest = history[history.length - 1]
   return (
-    <div className="border-b border-slate-800">
+    <div>
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
@@ -122,11 +99,9 @@ export default function CharacterSheetView() {
   const characters        = useCharacterStore((s) => s.characters)
   const updateCharacter   = useCharacterStore((s) => s.updateCharacter)
   const { character }                        = useCharacter()
-  const { campaign, setActiveCampaign }      = useCampaign()
+  const { setActiveCampaign }                = useCampaign()
   const { conditionLibrary, appliedConditions } = useConditions()
   const { restActions, triggerRest }         = useRestActions()
-  const { exportCharacter }                  = useExport()
-  const openSearch                           = useUIStore((s) => s.openSearch)
 
   // Sheet states
   const [isCreatePickerOpen, setIsCreatePickerOpen]         = useState(false)
@@ -211,17 +186,7 @@ export default function CharacterSheetView() {
         {/* ── Header ── */}
         <PageHeader
           title={character?.name ?? 'Loading...'}
-          subtitle={character
-            ? `Level ${character.level}${campaign?.system ? ` · ${campaign.system}` : ''}`
-            : undefined}
           onBack={() => navigate(`/campaigns/${campaignId}`)}
-          actions={
-            <>
-              <IconButton icon={<span>🔍</span>} label="Search"   variant="ghost" size="sm" onClick={openSearch} />
-              <IconButton icon={<span>⬇</span>}  label="Export"   variant="ghost" size="sm" onClick={exportCharacter} />
-              <IconButton icon={<span>💤</span>}  label="Rest"     variant="ghost" size="sm" onClick={() => setIsRestSheetOpen(true)} />
-            </>
-          }
         />
 
         {/* ── Condition chips ── */}
@@ -232,32 +197,16 @@ export default function CharacterSheetView() {
         {/* ── Single scrollable sheet ── */}
         <div className="flex-1 overflow-y-auto pb-24">
 
-          {character && character.stats.length > 0 && (
-            <Section title="Stats">
-              <StatsTab />
-            </Section>
-          )}
+          {character && character.stats.length > 0 && <StatsTab />}
 
-          {character && (character.items.length > 0 || character.currency.length > 0) && (
-            <Section title="Items & Currency">
-              <ItemsTab />
-            </Section>
-          )}
+          {character && character.items.length > 0 && <ItemsTab />}
 
-          {character && character.abilities.length > 0 && (
-            <Section title="Abilities">
-              <AbilitiesTab />
-            </Section>
-          )}
+          {character && character.abilities.length > 0 && <AbilitiesTab />}
 
           {character && (
             (character.biography?.sections?.length ?? 0) > 0 ||
             character.notes.length > 0
-          ) && (
-            <Section title="Biography & Notes">
-              <BiographyTab />
-            </Section>
-          )}
+          ) && <BiographyTab />}
 
           {character && character.history.length > 0 && (
             <HistorySection history={character.history} characterId={characterId} />
@@ -299,6 +248,8 @@ export default function CharacterSheetView() {
           isOpen={createStatOpen}
           onClose={() => setCreateStatOpen(false)}
           stats={character?.stats ?? []}
+          items={character?.items ?? []}
+          abilities={character?.abilities ?? []}
           characterId={characterId}
         />
 
@@ -307,6 +258,7 @@ export default function CharacterSheetView() {
           isOpen={createItemOpen}
           onClose={() => setCreateItemOpen(false)}
           characterId={characterId}
+          allStats={character?.stats ?? []}
         />
 
         <AbilityEditSheet
@@ -314,6 +266,7 @@ export default function CharacterSheetView() {
           isOpen={createAbilityOpen}
           onClose={() => setCreateAbilityOpen(false)}
           characterId={characterId}
+          allStats={character?.stats ?? []}
         />
 
         <NoteEditSheet
@@ -366,7 +319,6 @@ export default function CharacterSheetView() {
           </div>
         </BottomSheet>
 
-        <SearchOverlay />
       </div>
     </AppShell>
   )

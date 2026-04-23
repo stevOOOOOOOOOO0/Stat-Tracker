@@ -26,14 +26,34 @@ Stat Tracker is a mobile-first progressive web app (PWA) for tracking character 
 
 ### Stats
 
-A **Stat** is a named integer value that represents a measurable attribute of a character (e.g. Strength, Armor Class, Max HP). Stats have:
+A **Stat** is a named numeric value representing any measurable attribute of a character (e.g. Strength, Armor Class, HP). Stats are fully user-defined and have two UI states:
 
-- A **current value** — the live value during play, modified freely during a session
-- A **minimum** — a floor the value cannot drop below (typically 0, but configurable)
-- A **maximum** — a ceiling the value cannot exceed (can be a fixed number or a formula referencing other stats)
-- An optional **affector list** — other stats whose values automatically recalculate this stat when they change
+#### Read-Only State (the stat list)
 
-Players can tap a stat to increment, decrement, or directly set its value. All changes are recorded in the History log.
+The default view shows:
+
+- **Name** — the stat's label
+- **Derived Value** — base value plus the sum of all active affectors
+- **Maximum** (if set) — displayed as `value/max`
+- **Active affectors** — a compact list of modifiers currently changing the value (e.g. `+2 Magic Ring`, `−1 Curse`)
+- **Increment / Decrement** — +/− buttons that adjust the base value within its min/max bounds
+- **Roll** — (hidden if not rollable) rolls the configured dice and adds the derived value, showing the result inline
+
+#### Edit State (bottom sheet)
+
+Opened by tapping the › arrow. Shows all configurable fields:
+
+- **Name** — free text label
+- **Base Value** — the raw value set directly by the player
+- **Minimum** — floor the base value cannot drop below (default 0)
+- **Maximum** — optional ceiling; toggled on/off; base value is clamped to this on increment
+- **Rollable** — toggle; when enabled, the stat has a Roll action in read-only state
+- **# Dice / Dice Type** — (hidden if not rollable) e.g. `1d20`; rolled value is added to derived value on a check
+- **Affectors** — a list of named modifiers affecting the derived value (e.g. `+2 Magic Ring`); players add/remove these manually
+- **Clients** — stats, items, and abilities that this stat affects; a user-defined reference list for tracking downstream dependencies
+- **Delete / Discard / Save** — action row at the bottom
+
+The **derived value** = `baseValue + sum(affectors)`. All changes (increment, decrement, save) are recorded in the History log.
 
 ### Items
 
@@ -234,43 +254,13 @@ A **Character** belongs to a Campaign and is owned by one player. Each character
 
 ### Stats
 
-A **Stat** is any named numeric or text value on a character sheet. Stats are fully user-defined and fall into the following categories:
+A **Stat** is any named numeric value on a character sheet. Stats are fully user-defined — players create them from scratch with a name and base value. There is one stat type; complexity is opt-in via optional fields (min/max, rollable, affectors, clients).
 
-| Category   | Description                             | Examples                              |
-| ---------- | --------------------------------------- | ------------------------------------- |
-| `base`     | Raw value set directly by the user      | Strength: 18, Max HP: 45              |
-| `derived`  | Computed from other stats via a formula | STR Modifier: `floor((STR - 10) / 2)` |
-| `resource` | Has a current and max value, depletable | HP: 30/45, Spell Slots: 2/3           |
-| `text`     | Free text field                         | Class: "Paladin", Alignment: "LG"     |
-| `boolean`  | True/false toggle                       | Concentration: true                   |
+**Derived value** = `baseValue + sum(affectors)`. The derived value is what displays in the read-only state and is used for roll checks. Changes to base value via increment/decrement are clamped to [minValue, maxValue].
 
-#### Stat Affector System
+**Affectors** are named modifiers manually attached to a stat (e.g. `+2 Magic Ring`, `−1 Weakened`). They shift the displayed value without changing the base value, making it easy to see exactly what is contributing to a stat's current level.
 
-Stats can declare **affectors**: other stats that influence their value. This forms a dependency graph.
-
-**Example dependency:**
-
-```
-Strength (base) = 18
-  → STR Modifier (derived) = floor((18 - 10) / 2) = 4
-    → Longsword Attack Bonus (derived) = STR Modifier + Proficiency Bonus
-    → Longsword Damage (derived) = 1d8 + STR Modifier
-```
-
-When any stat in the graph changes, all downstream stats are recalculated automatically.
-
-**Formula syntax** (to be finalized during implementation):
-
-- Reference other stats by name: `STR`, `Proficiency Bonus`
-- Math operations: `+`, `-`, `*`, `/`, `floor()`, `ceil()`, `round()`, `max()`, `min()`
-- Dice notation (for display only, not auto-rolled): `1d8`, `2d6`
-- Conditional: `if(CON > 15, 2, 1)`
-
-Circular dependencies are detected and rejected at the time of creation.
-
-### Stat Blocks
-
-A **Stat Block** is a named grouping of stats displayed together, e.g. "Ability Scores", "Combat", "Spellcasting". Users can create, rename, and reorder blocks freely.
+**Clients** are a user-defined reference list of other stats, items, or abilities that this stat influences. These are informational — they help players track downstream dependencies without requiring formula-based computation.
 
 ### Notes
 
@@ -421,31 +411,26 @@ interface RollExpression {
   formula: string;        // e.g. "1d8 + STR_Modifier"
 }
 
-type StatCategory = "base" | "derived" | "resource" | "text" | "boolean";
+type DiceType = "d4" | "d6" | "d8" | "d10" | "d12" | "d20" | "d100";
+
+interface StatAffector {
+  id: string;
+  label: string;    // e.g. "Magic Ring", "Curse of Weakness"
+  modifier: number; // e.g. +2 or -1
+}
 
 interface Stat {
   id: string;
   name: string;
-  category: StatCategory;
-  value: number | string | boolean;
-  // For resource stats
-  currentValue?: number;
-  maxValue?: number | string; // can be a formula
-  // For derived stats
-  formula?: string; // e.g. "floor((STR - 10) / 2)"
-  affectors?: string[]; // stat IDs this stat depends on
-  // Display
-  blockId: string;
+  baseValue: number;
+  minValue: number;         // floor for increment/decrement (default 0)
+  maxValue?: number;        // optional ceiling; undefined = no max
+  isRollable: boolean;      // whether a dice roll action is shown
+  diceCount: number;        // e.g. 1
+  diceType: DiceType;       // e.g. "d20"
+  affectors: StatAffector[]; // active modifiers; derivedValue = baseValue + sum
+  clientIds: string[];      // IDs of stats/items/abilities affected by this stat
   order: number;
-  description?: string;
-}
-
-interface StatBlock {
-  id: string;
-  characterId: string;
-  name: string;
-  order: number;
-  statIds: string[];
 }
 
 interface Note {

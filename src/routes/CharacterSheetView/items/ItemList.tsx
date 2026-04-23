@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import type { Item } from '../../../types'
+import type { Item, Stat } from '../../../types'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { ConfirmDialog } from '../../../components/overlays/ConfirmDialog'
 import { useCharacterStore } from '../../../store/characterStore'
@@ -9,9 +9,10 @@ import { ItemEditSheet } from './ItemEditSheet'
 export interface ItemListProps {
   items: Item[]
   characterId: string
+  allStats?: Stat[]
 }
 
-export function ItemList({ items, characterId }: ItemListProps) {
+export function ItemList({ items, characterId, allStats = [] }: ItemListProps) {
   const removeItem = useCharacterStore(s => s.removeItem)
 
   const [editingItem, setEditingItem]   = useState<Item | null>(null)
@@ -43,6 +44,7 @@ export function ItemList({ items, characterId }: ItemListProps) {
         isOpen={editingItem !== null}
         onClose={() => setEditingItem(null)}
         characterId={characterId}
+        allStats={allStats}
       />
 
       <ConfirmDialog

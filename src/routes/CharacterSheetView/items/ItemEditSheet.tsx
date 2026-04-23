@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import type { Item } from '../../../types'
+import type { Item, Stat } from '../../../types'
 import { BottomSheet } from '../../../components/overlays/BottomSheet'
 import { ConfirmDialog } from '../../../components/overlays/ConfirmDialog'
 import { Button } from '../../../components/ui/Button'
@@ -15,9 +15,10 @@ export interface ItemEditSheetProps {
   isOpen: boolean
   onClose: () => void
   characterId: string
+  allStats?: Stat[]
 }
 
-export function ItemEditSheet({ item, isOpen, onClose, characterId }: ItemEditSheetProps) {
+export function ItemEditSheet({ item, isOpen, onClose, characterId, allStats = [] }: ItemEditSheetProps) {
   const addItem    = useCharacterStore(s => s.addItem)
   const updateItem = useCharacterStore(s => s.updateItem)
   const removeItem = useCharacterStore(s => s.removeItem)
@@ -73,6 +74,22 @@ export function ItemEditSheet({ item, isOpen, onClose, characterId }: ItemEditSh
       <BottomSheet isOpen={isOpen} onClose={onClose} title={item ? 'Edit Item' : 'New Item'}>
         <div className="space-y-4">
           <Input label="Name" value={name} onChange={e => setName(e.target.value)} placeholder="Item name" required autoFocus />
+          {item && (() => {
+            const affectingStats = allStats.filter(s => (s.affectees ?? []).some(e => e.id === item.id))
+            return affectingStats.length > 0 ? (
+              <div>
+                <p className="text-sm font-medium text-slate-300 mb-2">Affectors</p>
+                <div className="space-y-1">
+                  {affectingStats.map(s => (
+                    <div key={s.id} className="flex items-center gap-2 bg-slate-700/50 rounded-lg px-3 py-2">
+                      <span className="text-xs text-slate-500 uppercase tracking-wide flex-shrink-0">stat</span>
+                      <span className="text-slate-300 text-sm">{s.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null
+          })()}
           <Textarea label="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe this item..." rows={3} />
           <div className="space-y-2">
             <Toggle checked={trackQty} onChange={v => { setTrackQty(v); if (v && quantity === 0) setQuantity(1) }} label="Track quantity" />

@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { FormulaInput } from '../ui/FormulaInput'
 import { Button } from '../ui/Button'
 import { useDice } from '../../hooks/useDice'
 import type { Stat } from '../../types'
+import type { RollResult } from '../../engine/rollEvaluator'
 
 const DICE = [
   { label: 'd4', sides: 4 },
@@ -13,6 +14,52 @@ const DICE = [
   { label: 'd20', sides: 20 },
   { label: 'd%', sides: 100 },
 ]
+
+function DiceBreakdown({ formula, result }: { formula: string; result: RollResult }) {
+  const [revealed, setRevealed] = useState<Set<number>>(new Set())
+
+  const toggle = (i: number) => setRevealed(prev => {
+    const next = new Set(prev)
+    next.has(i) ? next.delete(i) : next.add(i)
+    return next
+  })
+
+  // Split formula into dice tokens and plain text segments
+  const segments: Array<{ type: 'dice'; notation: string; idx: number } | { type: 'text'; value: string }> = []
+  let rollIdx = 0, lastEnd = 0
+  for (const m of formula.matchAll(/\d+d\d+/gi)) {
+    if (m.index! > lastEnd) segments.push({ type: 'text', value: formula.slice(lastEnd, m.index) })
+    segments.push({ type: 'dice', notation: m[0], idx: rollIdx++ })
+    lastEnd = m.index! + m[0].length
+  }
+  if (lastEnd < formula.length) segments.push({ type: 'text', value: formula.slice(lastEnd) })
+
+  return (
+    <div className="flex items-center flex-wrap gap-x-1 gap-y-0.5">
+      {segments.map((seg, i) =>
+        seg.type === 'text' ? (
+          <span key={i} className="text-xs text-slate-500">{seg.value.trim()}</span>
+        ) : (
+          <button
+            key={i}
+            type="button"
+            onClick={() => toggle(seg.idx)}
+            className={`text-xs font-mono tabular-nums px-1.5 py-0.5 rounded transition-colors ${
+              revealed.has(seg.idx)
+                ? 'bg-indigo-600/30 text-indigo-300'
+                : 'bg-slate-700 text-slate-400 hover:text-slate-200'
+            }`}
+            title={revealed.has(seg.idx) ? 'Show notation' : 'Show result'}
+          >
+            {revealed.has(seg.idx) ? (result.rolls[seg.idx]?.result ?? seg.notation) : seg.notation}
+          </button>
+        )
+      )}
+      <span className="text-xs text-slate-500">= </span>
+      <span className="text-indigo-300 font-bold tabular-nums">{result.total}</span>
+    </div>
+  )
+}
 
 function formatTimestamp(iso: string): string {
   try {
@@ -76,15 +123,8 @@ export function DiceCalculator({ stats = [] }: DiceCalculatorProps) {
         </div>
 
         {lastEntry && (
-          <div className="mt-3 text-center">
-            <p className="text-2xl font-bold text-indigo-400">
-              {lastEntry.result.total}
-            </p>
-            {lastEntry.result.rolls && lastEntry.result.rolls.length > 0 && (
-              <p className="text-xs text-slate-500 mt-0.5">
-                [{lastEntry.result.rolls.map((r) => `${r.dice}: ${r.result}`).join(', ')}]
-              </p>
-            )}
+          <div className="mt-3">
+            <DiceBreakdown formula={lastEntry.formula} result={lastEntry.result} />
           </div>
         )}
       </section>
@@ -101,11 +141,8 @@ export function DiceCalculator({ stats = [] }: DiceCalculatorProps) {
                 key={i}
                 className="flex items-center justify-between bg-slate-700/50 rounded-lg px-3 py-2"
               >
-                <div className="flex flex-col">
-                  <span className="text-slate-400 text-xs">{entry.formula}</span>
-                  <span className="text-slate-100 font-bold">{entry.result.total}</span>
-                </div>
-                <span className="text-slate-500 text-xs">
+                <DiceBreakdown formula={entry.formula} result={entry.result} />
+                <span className="text-slate-500 text-xs flex-shrink-0 ml-2">
                   {formatTimestamp(entry.timestamp)}
                 </span>
               </div>

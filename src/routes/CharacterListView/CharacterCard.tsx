@@ -49,7 +49,7 @@ export function CharacterCard({ character, isOwner, onClick }: CharacterCardProp
           </div>
 
           {hpStat && (
-            <p className="text-sm text-slate-300 mt-0.5">❤️ {hpStat.value}</p>
+            <p className="text-sm text-slate-300 mt-0.5">❤️ {hpStat.baseValue}</p>
           )}
 
           {/* Conditions */}
