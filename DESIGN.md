@@ -2,570 +2,352 @@
 
 ## Overview
 
-Stat Tracker is a mobile-first progressive web app (PWA) for tracking character statistics, notes, and history during tabletop RPG sessions. It is intentionally system-agnostic: players define their own stats, formulas, and relationships rather than being locked into a specific game's ruleset.
+Stat Tracker is a mobile-first progressive web app (PWA) for tracking character statistics, notes, and history during tabletop RPG sessions. It is intentionally system-agnostic: players define their own stats, items, abilities, and notes rather than being locked into a specific game's ruleset.
 
 ---
 
 ## Goals
 
 - **System-agnostic** — works for D&D, Pathfinder, custom systems, or any TTRPG
-- **Flexible stat engine** — stats can affect other stats through user-defined formulas
+- **Flexible stat engine** — stats can affect other stats through user-defined relationships
 - **Full session tracking** — stats, notes, history, inventory, conditions, or anything else
 - **Easy mobile interactions** — optimized for quick updates at the table
 - **Offline-capable** — fully functional without an internet connection
-- **Shareable** — character sheets can be shared with other players or a GM via accounts
+- **Shareable** — character sheets can be shared with other players or a GM via accounts (V2)
 
 ## Non-Goals
 
 - This app does not enforce any game's rules automatically (no spell slot validation, no RAW rulings)
 - This app is not a virtual tabletop (no maps, tokens, or dice physics)
 
-## Key Capabilities
-
-- Users can create entire characters from scratch with custom stats organized into named stat blocks for easy viewing and editing
-
-### Stats
-
-A **Stat** is a named numeric value representing any measurable attribute of a character (e.g. Strength, Armor Class, HP). Stats are fully user-defined and have two UI states:
-
-#### Read-Only State (the stat list)
-
-The default view shows:
-
-- **Name** — the stat's label
-- **Derived Value** — base value plus the sum of all active affectors
-- **Maximum** (if set) — displayed as `value/max`
-- **Active affectors** — a compact list of modifiers currently changing the value (e.g. `+2 Magic Ring`, `−1 Curse`)
-- **Increment / Decrement** — +/− buttons that adjust the base value within its min/max bounds
-- **Roll** — (hidden if not rollable) rolls the configured dice and adds the derived value, showing the result inline
-
-#### Edit State (bottom sheet)
-
-Opened by tapping the › arrow. Shows all configurable fields:
-
-- **Name** — free text label
-- **Base Value** — the raw value set directly by the player
-- **Minimum** — floor the base value cannot drop below (default 0)
-- **Maximum** — optional ceiling; toggled on/off; base value is clamped to this on increment
-- **Rollable** — toggle; when enabled, the stat has a Roll action in read-only state
-- **# Dice / Dice Type** — (hidden if not rollable) e.g. `1d20`; rolled value is added to derived value on a check
-- **Affectors** — a list of named modifiers affecting the derived value (e.g. `+2 Magic Ring`); players add/remove these manually
-- **Clients** — stats, items, and abilities that this stat affects; a user-defined reference list for tracking downstream dependencies
-- **Delete / Discard / Save** — action row at the bottom
-
-The **derived value** = `baseValue + sum(affectors)`. All changes (increment, decrement, save) are recorded in the History log.
-
-### Items
-
-An **Item** is a named object in a character's possession that can produce a result when used (e.g. a sword, a potion, a wand). Items have:
-
-- A **name** and optional description
-- One or more **roll expressions** — dice formulas that define what the item does (e.g. `1d8 + STR_Modifier` for damage)
-- An **affector list** — stats or other items that modify the roll result (e.g. a magic sword might add an Enchantment Bonus stat)
-- An optional **quantity** — for consumable items (e.g. arrows, potions)
-
-When an item is used, the app evaluates its roll expression with all active affectors applied and optionally records the result in History.
-
-### Abilities
-
-An **Ability** is a named action a character can perform (e.g. a spell, a class feature, a special attack). Abilities have:
-
-- A **name** and optional description
-- One or more **roll expressions** — dice formulas for the ability's effect (e.g. `2d6 + Spellcasting_Modifier` for a fireball)
-- An **affector list** — stats or items that modify the roll (e.g. a Spell Power stat could add to all spell rolls)
-- An optional **resource cost** — links to a resource stat that is decremented on use (e.g. using a spell slot ability reduces the Spell Slots stat)
-- An optional **recharge condition** — notes when the ability refreshes (e.g. "Short rest", "Long rest", "Recharges on 5–6")
-
-When an ability is used, the roll is evaluated with affectors applied, any linked resource is decremented, and the event is recorded in History.
-
-### Currency
-
-A **Currency** wallet holds one or more named denominations defined by the player (e.g. Gold / Silver / Copper, or Credits, or simply "Gold"). Each denomination has:
-
-- A **name** and optional abbreviation
-- A **current amount** (integer, adjustable with +/- or direct entry)
-- An optional **conversion rate** to another denomination (e.g. 1 Gold = 100 Copper)
-
-Currency is displayed as its own section within the Items & Currency tab. Changes are recorded in History.
-
-### Rest & Recovery
-
-**Rest Actions** are one-tap buttons that trigger a batch reset of multiple stats simultaneously. Each rest action has:
-
-- A **name** (e.g. "Short Rest", "Long Rest", "Full Recovery")
-- A **list of stat resets** — each entry specifies a target stat and how to restore it: restore to maximum, restore by a fixed amount, or restore by a roll expression (e.g. `1d6 + CON_Modifier`)
-
-When triggered, all resets are applied at once and a single History entry is logged summarizing what was recovered.
-
-### Character Biography
-
-A **Biography** is a structured set of long-form text fields attached to a character. Sections are fully customizable but common defaults include:
-
-- Backstory
-- Personality Traits
-- Bonds
-- Flaws & Ideals
-- Appearance
-
-Biography lives in the Biography, Notes & History tab and is intended for stable character identity information, separate from in-session notes.
-
-### Quick-Access Bar
-
-The **Quick-Access Bar** automatically tracks interaction frequency across all stats, abilities, and items. The 4 most frequently used entries are surfaced as large tap targets at the top of the Character Sheet View, always visible while scrolling.
-
-- Frequency is tracked locally per character (tap count per item)
-- The bar updates in real time as usage patterns change
-- The player can manually pin or unpin entries to override the automatic selection
-
-### Status Condition Library
-
-The **Condition Library** is a pre-seeded list of common conditions the player can apply with one tap instead of typing from scratch. Each condition entry has:
-
-- A name (e.g. Poisoned, Prone, Frightened, Concentrating)
-- An optional set of stat affector rules active while the condition is applied
-- An optional duration (number of rounds, or session-scoped)
-
-The library comes with common conditions for popular systems pre-loaded and can be extended with custom entries. Applied conditions appear as chips on the character card and in the party health overview.
-
-### Session Notes
-
-**Session Notes** are campaign-level notes shared with all members of a campaign. Unlike per-character notes, they belong to the campaign itself and are visible to everyone. Common uses include GM summaries, shared lore, handouts, and quest tracking. Each session note has a title, body (markdown), tags, and a session label.
-
-### Party Health Overview
-
-A compact, read-only panel showing the live status of all characters in a campaign. For each character it displays HP (current/max), active conditions, and any stats the character owner marks as "party-visible". Updated in real time when online.
-
-### Initiative Tracker
-
-A shared ordered list managed by the GM that shows whose turn it is during combat. Features:
-
-- Add characters (from the party) or custom entries (for monsters/NPCs) to the order
-- Reorder by drag or by entering initiative values
-- Step through turns with a single tap; the current turn is highlighted for all viewers
-- Round counter increments automatically
-
 ---
 
 ## Views & Navigation
 
-The app is organized into four levels of navigation. A persistent **Dice Calculator** overlay is accessible from any level.
-
 ```
 Campaign View  (top level)
 └── Character List View  (scoped to one campaign)
-    ├── Party Health Overview  (compact HP/condition snapshot for all members)
-    ├── Initiative Tracker  (GM-managed turn order, visible to all)
     └── Character Sheet View  (scoped to one character)
-        ├── Quick-Access Bar  (auto-pinned: 4 most-used stats/abilities/items)
-        ├── Scrollable sheet  (all sections in one continuous list)
-        │   ├── Stats (stat blocks)
-        │   ├── Items & Currency
-        │   ├── Abilities
-        │   ├── Biography
-        │   └── Notes & History
-        └── [+] Create FAB  (create any entity type from one button)
-
-[Dice Calculator]  — floating button, accessible from every view
-[Search]  — accessible from every view, scopes to open character or campaign
+        ├── Editable character name (page header)
+        ├── Condition chip bar
+        ├── Unified draggable item list (stats, items, abilities, bio sections, notes)
+        ├── History section (pinned to bottom)
+        └── [+] Create FAB
 ```
 
 ### Campaign View
 
-The entry point of the app. Displays all campaigns the player is currently part of, each shown as a card with:
-
-- Campaign name and optional cover image
-- TTRPG system label (e.g. "D&D 5e")
-- Player count and the user's character name within that campaign
-- Last-updated timestamp
-
-From here the player can create a new campaign, join an existing one via invite code, or tap a campaign to open the Character List.
+Entry point of the app. Displays all campaigns the player is part of. From here the player can create a new campaign or open the Character List.
 
 ### Character List View
 
-Displays all characters belonging to the selected campaign. Characters are split into two groups:
-
-| Group | Description |
-|---|---|
-| **My Characters** | Characters owned by the current user — fully editable |
-| **Party Members** | Characters owned by other players in the campaign — read-only |
-
-Each character card shows a quick summary (name, class/role, key resource stats like HP). Tapping a character opens the Character Sheet View.
-
-A **Party Health Overview** panel is accessible from this view. It shows all party members' HP, active conditions, and any stats the GM marks as "party-visible" in a compact at-a-glance layout — useful during combat for both the GM and players watching their allies.
-
-An **Initiative Tracker** panel is also accessible here. The GM sets and reorders the initiative list; all party members see the current turn order in real time.
+Displays all characters belonging to the selected campaign. Tapping a character opens the Character Sheet View.
 
 ### Character Sheet View
 
-The primary working view. The entire character sheet is a **single continuous scrollable page** — no tabs. All sections (stats, items, currency, abilities, biography, notes, history) are stacked vertically and the player scrolls through them freely.
+The primary working view. All character content lives in a **single continuous scrollable page** — no tabs, no fixed sections.
 
-Each section has a collapsible header so players can hide sections they don't need during a session. Section order is fixed but sections can be collapsed to keep the view tidy.
+#### Page Header
 
-A **Quick-Access Bar** sits below the page header and always remains visible while scrolling. It auto-populates with the 4 stats, abilities, or items the player has interacted with most frequently. Tapping a quick-access entry fires that item's primary action immediately without scrolling.
+- **Back button** — returns to the Character List
+- **Character name** — tap to edit inline; Enter or blur saves, Escape cancels
 
-A single **[+] Create FAB** sits fixed at the bottom-right. Tapping it opens a creation picker sheet with options to create any entity type: Stat Block, Stat, Item, Ability, Biography Section, or Note. The player picks a type and the relevant creation form opens immediately.
+#### Condition Chip Bar
 
-When viewing another player's character (read-only), all edit controls and the Create FAB are hidden. The owner's edits appear live if the device is online.
+Active conditions are shown as chips below the header. Tapping a chip removes the condition.
 
-### Dice Calculator
+#### Unified Item List
 
-A floating action button available at every level of the app opens the Dice Calculator as a bottom sheet (does not navigate away from the current view). It supports:
+All entity types — stats, items, abilities, biography sections, and notes — live together in one flat list. The player controls the order by dragging. Any item can appear anywhere relative to any other item regardless of type.
 
-- **Quick dice buttons** — one-tap rolls for common dice: d4, d6, d8, d10, d12, d20, d100
-- **Formula input** — type any expression (e.g. `2d6 + 5`, `4d4 - STR_Modifier`) and evaluate it
-- **Roll history** — a short log of recent rolls within the current session
-- **Stat references** — if a character sheet is open, the formula can reference that character's stats by name
+Each list entry has a **drag handle** (≡) on the left. While dragging:
+- The item is removed from its original position
+- A ghost (40% opacity) appears at the current drop target
+- Releasing snaps the item into place
 
-The calculator is purely a convenience tool; rolls made here are not automatically recorded in a character's History unless the user chooses to save the result.
+The global order is stored in `Character.sheetOrder` (an array of entity IDs). New items not yet in `sheetOrder` appear at the end of the list.
 
----
+History is not part of the draggable list — it is always pinned below everything else.
 
-## User Personas
+#### Create FAB
 
-| Persona         | Description                                                                        |
-| --------------- | ---------------------------------------------------------------------------------- |
-| **Player**      | Tracks their own character's stats, notes, and resources during a session          |
-| **GM / DM**     | Views all party character sheets in read-only mode; may edit if granted permission |
-| **Solo Player** | Uses the app offline with no account, purely local                                 |
+A fixed `+` button in the bottom-right opens a type picker sheet. The player chooses Stat, Item, Ability, Biography Section, or Note, and the relevant creation form opens immediately.
 
 ---
 
-## Core Concepts
-
-### Campaigns
-
-A **Campaign** is the top-level container grouping a set of characters into one game. Each campaign has:
-
-- A name, optional cover image, and TTRPG system label
-- An **owner** (typically the GM) and a list of **member players**
-- A collection of Characters (one or more per player)
-- An invite code or shareable link for adding new members
-
-Characters belong to exactly one campaign. A player can be a member of multiple campaigns simultaneously.
-
-### Characters
-
-A **Character** belongs to a Campaign and is owned by one player. Each character has:
-
-- A name and optional avatar/portrait
-- A TTRPG system label (free text, e.g. "D&D 5e", "Custom")
-- A collection of Stat Blocks, Notes, and History entries
-- An owner account and optional list of shared viewers/editors
+## Entity Types
 
 ### Stats
 
-A **Stat** is any named numeric value on a character sheet. Stats are fully user-defined — players create them from scratch with a name and base value. There is one stat type; complexity is opt-in via optional fields (min/max, rollable, affectors, clients).
+A **Stat** is a named numeric value representing any measurable attribute (e.g. HP, Strength, AC). Stats are fully user-defined.
 
-**Derived value** = `baseValue + sum(affectors)`. The derived value is what displays in the read-only state and is used for roll checks. Changes to base value via increment/decrement are clamped to [minValue, maxValue].
+#### Read-Only State (the list row)
 
-**Affectors** are named modifiers manually attached to a stat (e.g. `+2 Magic Ring`, `−1 Weakened`). They shift the displayed value without changing the base value, making it easy to see exactly what is contributing to a stat's current level.
+Each stat row shows:
 
-**Clients** are a user-defined reference list of other stats, items, or abilities that this stat influences. These are informational — they help players track downstream dependencies without requiring formula-based computation.
+- **Drag handle** — ≡ on the left; grab to reorder
+- **Name** — the stat's label
+- **Derived value** — base value plus the sum of all affector contributions; shown as `value` or `value/max` when a maximum is set
+- **Active affectors** — compact list of stat names currently modifying this stat's value
+- **Roll Check button** — indigo, 48px tall, shown only when the stat is rollable; tapping rolls the configured dice and adds the derived value
+
+Tapping anywhere on the row (except the drag handle and Roll Check button) opens the **Stat Popover**.
+
+#### Roll Result Display
+
+After a roll, the result appears inline below the stat row:
+
+- A togglable button shows either the dice notation (`1d20`) or the raw dice total; tapping switches between them
+- The modifier (`+ 5`) and final result (`= 23`) are shown alongside
+- A `✕` button dismisses the result; it auto-dismisses after 30 seconds
+
+#### Stat Popover
+
+A centered card overlay that opens when tapping a stat row:
+
+- Large `−` and `+` buttons to decrement/increment the base value (clamped to min/max)
+- Current derived value (large, centred)
+- Roll Check section (if rollable) with the same notation toggle as the row
+- **Edit** button (top right) — opens the Stat Edit Sheet
+- **Close** button (top right) — dismisses the popover
+- Tapping the backdrop also closes the popover
+
+#### Stat Edit Sheet (bottom sheet)
+
+Opened via the Edit button in the Stat Popover, or when creating a new stat.
+
+**Header row** (always visible, outside the scrollable area):
+- **Left** — the stat name as an inline-editable input; tap to edit, changing it updates the draft immediately
+- **Right** — "STAT" type badge
+
+**Scrollable form fields:**
+- **Base Value** — numeric input
+- **Minimum** — toggle on/off; when on, exposes a numeric input for the floor value
+- **Maximum** — toggle on/off; when on, exposes a numeric input for the ceiling value
+- **Rollable** — toggle; when on, exposes Dice Count and Dice Type fields
+- **Affected By** — list of stats that affect this stat, each with an arrow showing which field they target (Value / Minimum / Maximum); a two-step picker adds a new affector: select the stat, then select the target field
+- **Affecting** — list of stats, items, and abilities this stat affects; a two-step picker adds a new entry (for stats, the target field is also selected)
+
+**Footer** (always visible, pinned to screen bottom):
+- **Delete** — removes the stat (with confirmation dialog); only shown when editing an existing stat
+- **Discard** — closes without saving
+- **Save** — commits all changes
+
+**Sheet drag behaviour:**
+- Drag handle is interactive; dragging resizes the sheet
+- Snap points: compact (title + one field + footer), default (70vh), full (92vh)
+- Dragging down collapses through snap points; dragging all the way to the bottom discards and closes
+- Dragging up expands through snap points
+- In all cases the footer buttons stay pinned to the screen bottom — only the content area grows or shrinks
+
+### Items
+
+An **Item** is a named object in a character's possession.
+
+- Name and optional description
+- Optional quantity (for consumables)
+- Shown as a card with a drag handle, name, truncated description, and a `···` menu (Edit / Delete)
+- Delete requires confirmation
+
+### Abilities
+
+An **Ability** is a named action a character can perform (e.g. a spell, a class feature).
+
+- Name and optional description
+- Shown as a card with a drag handle, name, truncated description, and a `···` menu (Edit / Delete)
+- Delete requires confirmation
+
+### Biography Sections
+
+A **Biography Section** is a long-form text block for stable character identity information (backstory, traits, etc.).
+
+- Inline-editable title (click to edit, Enter/blur saves)
+- Collapsible body with a markdown editor
+- Drag handle for reordering
+- Delete button in the header row
 
 ### Notes
 
-**Notes** are freeform markdown text entries attached to a character. Each note has:
+A **Note** is a freeform markdown text entry for in-session use.
 
-- A title
-- Body (markdown)
-- Tags (e.g. "quest", "NPC", "reminder")
-- A timestamp
+- Title and body (markdown)
+- Shown as a card with drag handle, title, 2-line body preview, and last-updated timestamp
+- `···` menu opens the Note Edit Sheet (which also contains the Delete action)
 
-### History / Event Log
+### History
 
-The **History** is an append-only log of events on a character. Entries are created:
+The **History** is an append-only event log pinned to the bottom of the character sheet, below the draggable list. It is not reorderable.
 
-- Automatically when a stat changes (e.g. "HP changed from 45 → 32")
-- Manually by the user (e.g. "Took a short rest, recovered 2 spell slots")
-
-History entries include a timestamp and an optional note.
-
-### Conditions / Tags
-
-**Conditions** are temporary boolean or stacked states attached to a character (e.g. Poisoned, Frightened, Concentrating). Conditions are applied from a **Condition Library** — a pre-seeded list of common conditions that can be extended with custom entries. Each condition can optionally:
-
-- Modify a stat via an affector rule while active
-- Have a duration (number of rounds, or session-scoped)
-- Appear as a visible chip on the character card and in the Party Health Overview
-
-### Currency
-
-See [Key Capabilities — Currency](#currency) for full details. Currency denominations are character-defined; conversion rates between denominations are optional.
-
-### Rest & Recovery
-
-See [Key Capabilities — Rest & Recovery](#rest--recovery) for full details. Rest actions are character-defined batch resets that fire with a single tap.
-
-### Biography
-
-See [Key Capabilities — Character Biography](#character-biography) for full details. Biography sections are customizable long-form text fields for stable character identity information.
-
-### Session Notes
-
-See [Key Capabilities — Session Notes](#session-notes) for full details. Campaign-level shared notes visible to all party members.
-
-### Party Health Overview
-
-See [Key Capabilities — Party Health Overview](#party-health-overview) for full details. A real-time read-only snapshot of all party members' HP and conditions.
-
-### Initiative Tracker
-
-See [Key Capabilities — Initiative Tracker](#initiative-tracker) for full details. A GM-managed shared turn order visible to the whole party.
+- Collapsed by default; shows the most recent entry as a preview
+- Expanding shows the full log via `HistoryLog`
+- Entries are created automatically on stat changes and can be added manually
 
 ---
 
-## Feature List
+## Bottom Sheet Interaction Model
 
-### MVP Features
+All edit forms, creation forms, and action sheets use a shared `BottomSheet` component with consistent drag behaviour.
 
-- [ ] Campaign view: create and manage campaigns (local, no account required)
-- [ ] Character list view: see all characters within a campaign
-- [ ] Create and manage characters with full edit access
-- [ ] Create custom stats in any category (base, derived, resource, text, boolean)
-- [ ] Define stat affectors and see downstream stats update live
-- [ ] Organize stats into named stat blocks
-- [ ] Quick-edit stats from the character sheet view (tap to edit)
-- [ ] Increment/decrement resource stats with +/- buttons
-- [ ] Create and manage items with roll expressions and affectors
-- [ ] Currency wallet: custom denominations with optional conversion rates
-- [ ] Create and manage abilities with roll expressions, resource costs, and recharge conditions
-- [ ] Prepared/unprepared toggle on abilities
-- [ ] Rest & recovery actions: one-tap batch stat resets (short rest, long rest, etc.)
-- [ ] Character biography with customizable long-form sections
-- [ ] Add freeform notes with titles and tags
-- [ ] Session notes: campaign-level shared notes
-- [ ] Auto-generated history log for stat changes, ability/item use, rest actions, and level-ups
-- [ ] Manual history entries
-- [ ] Condition library: pre-seeded common conditions, apply with one tap, custom conditions supported
-- [ ] Single scrollable character sheet with all sections (stats, items, currency, abilities, biography, notes, history) stacked vertically; sections are individually collapsible
-- [ ] Single [+] Create FAB on character sheet opens a type-picker sheet to create any entity (stat block, stat, item, ability, biography section, note)
-- [ ] Quick-access bar: auto-surfaces the 4 most-used stats/abilities/items; manual pin/unpin override
-- [ ] Dice calculator: quick dice buttons and formula input, accessible from every view
-- [ ] Search: scoped to open character or campaign
-- [ ] Dark mode
-- [ ] Full offline support (PWA, no network required)
-- [ ] Data export (JSON download of a character)
+### Snap Points
 
-### V2 Features
+| Point | Height | Notes |
+|---|---|---|
+| Compact | configurable per sheet | Optional; only enabled on specific sheets (e.g. Stat Edit) |
+| Default | 70vh | Starting position when a sheet opens |
+| Full | 92vh | Expanded state |
 
-- [ ] User accounts (email/password or OAuth)
-- [ ] Cloud sync of characters and campaigns across devices
-- [ ] Invite flow: share campaign via link or code
-- [ ] Party member characters visible in read-only within the Character List
-- [ ] Party health overview: live HP and conditions for all party members
-- [ ] Initiative tracker: GM-managed shared turn order with round counter
-- [ ] Real-time sync (edits appear live for all party members)
-- [ ] Dice calculator stat references: formulas can reference the currently open character's stats
+### Drag Gestures
 
-### Stretch Goals
+- **Drag up** — grows the sheet height upward; footer stays pinned to screen bottom
+- **Drag down** — shrinks the sheet height downward; footer stays pinned to screen bottom
+- **Release above threshold** — snaps to the next snap point in that direction
+- **Release near the bottom** (sheet height < 100px) — always dismisses, discarding any unsaved state
+- **Tap backdrop** — dismisses the sheet
 
-- [ ] Template library: pre-built character sheet layouts for common systems (D&D 5e, PF2e, etc.)
-- [ ] Import from D&D Beyond / other platforms
-- [ ] Avatar / cover image uploads to cloud storage
+Height changes use CSS transitions (`cubic-bezier(0.32, 0.72, 0, 1)`) when snapping. During an active drag, transitions are disabled so the sheet tracks the finger precisely.
 
 ---
 
-## Data Model (Draft)
+## Data Model
+
+This reflects the current implemented types.
 
 ```typescript
-interface Campaign {
-  id: string;
-  name: string;
-  system: string;         // free text, e.g. "D&D 5e"
-  coverImageUrl?: string;
-  ownerId?: string;       // GM; null if no account
-  memberIds: string[];    // player user IDs
-  inviteCode?: string;
-  characterIds: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+type DiceType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100'
 
-interface Item {
-  id: string;
-  characterId: string;
-  name: string;
-  description?: string;
-  rollExpressions: RollExpression[];
-  affectorIds: string[];  // stat or item IDs that modify rolls
-  quantity?: number;      // undefined = not a consumable
-  order: number;
-}
+type AffectTarget = 'baseValue' | 'minValue' | 'maxValue'
 
-interface Ability {
-  id: string;
-  characterId: string;
-  name: string;
-  description?: string;
-  rollExpressions: RollExpression[];
-  affectorIds: string[];    // stat or item IDs that modify rolls
-  resourceCostStatId?: string; // stat decremented on use
-  resourceCostAmount?: number;
-  rechargeCondition?: string; // e.g. "Long rest", "Recharges on 5–6"
-  prepared: boolean;        // unprepared abilities are hidden by default
-  order: number;
-}
-
-interface RollExpression {
-  label: string;          // e.g. "Attack", "Damage"
-  formula: string;        // e.g. "1d8 + STR_Modifier"
-}
-
-type DiceType = "d4" | "d6" | "d8" | "d10" | "d12" | "d20" | "d100";
-
-interface StatAffector {
-  id: string;
-  label: string;    // e.g. "Magic Ring", "Curse of Weakness"
-  modifier: number; // e.g. +2 or -1
+interface AffecteeEntry {
+  id:     string       // ID of the stat/item/ability being affected
+  target: AffectTarget // which field on that entity is affected
 }
 
 interface Stat {
-  id: string;
-  name: string;
-  baseValue: number;
-  minValue: number;         // floor for increment/decrement (default 0)
-  maxValue?: number;        // optional ceiling; undefined = no max
-  isRollable: boolean;      // whether a dice roll action is shown
-  diceCount: number;        // e.g. 1
-  diceType: DiceType;       // e.g. "d20"
-  affectors: StatAffector[]; // active modifiers; derivedValue = baseValue + sum
-  clientIds: string[];      // IDs of stats/items/abilities affected by this stat
-  order: number;
+  id:         string
+  name:       string
+  baseValue:  number
+  minValue?:  number       // floor; undefined = no minimum
+  maxValue?:  number       // ceiling; undefined = no maximum
+  isRollable: boolean
+  diceCount:  number       // e.g. 1
+  diceType:   DiceType     // e.g. 'd20'
+  affectees:  AffecteeEntry[]  // entities this stat affects, and which field
+  order:      number       // per-type sort order (legacy; global order via sheetOrder)
+}
+
+// derivedValue = baseValue + sum of baseValue of all stats that have this stat in their affectees with target='baseValue'
+// derivedMax   = maxValue  + sum of baseValue of all stats that have this stat in their affectees with target='maxValue'
+
+interface Item {
+  id:          string
+  characterId: string
+  name:        string
+  description?: string
+  quantity?:   number   // undefined = not a consumable
+  order:       number
+}
+
+interface Ability {
+  id:          string
+  characterId: string
+  name:        string
+  description?: string
+  order:       number
 }
 
 interface Note {
-  id: string;
-  characterId: string;
-  title: string;
-  body: string; // markdown
-  tags: string[];
-  createdAt: string; // ISO timestamp
-  updatedAt: string;
-}
-
-interface HistoryEntry {
-  id: string;
-  characterId: string;
-  timestamp: string;
-  type: "stat_change" | "item_used" | "ability_used" | "rest" | "level_up" | "condition_change" | "currency_change" | "manual";
-  description: string;
-  entityId?: string;        // stat, item, ability, or condition ID
-  previousValue?: number | string | boolean;
-  newValue?: number | string | boolean;
-}
-
-interface CurrencyDenomination {
-  id: string;
-  name: string;
-  abbreviation?: string;
-  amount: number;
-  conversionToId?: string;  // ID of the denomination this converts into
-  conversionRate?: number;  // e.g. 100 (meaning 100 of this = 1 of conversionToId)
-}
-
-interface RestAction {
-  id: string;
-  characterId: string;
-  name: string;             // e.g. "Short Rest", "Long Rest"
-  resets: RestReset[];
-}
-
-interface RestReset {
-  statId: string;
-  mode: "full" | "fixed" | "roll";
-  amount?: number;          // used when mode = "fixed"
-  formula?: string;         // used when mode = "roll", e.g. "1d6 + CON_Modifier"
-}
-
-interface Condition {
-  id: string;
-  name: string;
-  description?: string;
-  affectorRules?: ConditionAffector[];
-  durationType: "rounds" | "session" | "permanent";
-  duration?: number;        // number of rounds, if durationType = "rounds"
-  isLibraryEntry: boolean;  // true = part of the shared condition library
-}
-
-interface ConditionAffector {
-  statId: string;
-  modifier: number | string; // fixed number or formula
-}
-
-interface AppliedCondition {
-  conditionId: string;
-  characterId: string;
-  appliedAt: string;        // ISO timestamp
-  remainingRounds?: number;
-}
-
-interface Biography {
-  characterId: string;
-  sections: BiographySection[];
+  id:          string
+  characterId: string
+  title:       string
+  body:        string   // markdown
+  order:       number
+  createdAt:   string
+  updatedAt:   string
 }
 
 interface BiographySection {
-  id: string;
-  title: string;            // e.g. "Backstory", "Personality Traits"
-  body: string;             // markdown
-  order: number;
+  id:    string
+  title: string
+  body:  string   // markdown
+  order: number
 }
 
-interface SessionNote {
-  id: string;
-  campaignId: string;
-  title: string;
-  body: string;             // markdown
-  tags: string[];
-  sessionLabel?: string;    // e.g. "Session 12"
-  createdAt: string;
-  updatedAt: string;
+interface Biography {
+  characterId: string
+  sections:    BiographySection[]
 }
 
-interface InitiativeEntry {
-  id: string;
-  label: string;            // character name or custom NPC label
-  characterId?: string;     // set if linked to a party character
-  initiativeValue: number;
-  isActive: boolean;        // true = current turn
+interface HistoryEntry {
+  id:            string
+  characterId:   string
+  timestamp:     string
+  type:          'stat_change' | 'item_used' | 'ability_used' | 'rest' | 'level_up' | 'condition_change' | 'manual'
+  description:   string
+  entityId?:     string
+  previousValue?: number | string | boolean
+  newValue?:      number | string | boolean
 }
 
-interface InitiativeTracker {
-  campaignId: string;
-  round: number;
-  entries: InitiativeEntry[];
-  updatedAt: string;
+interface RestReset {
+  statId:   string
+  mode:     'full' | 'fixed' | 'roll'
+  amount?:  number   // when mode = 'fixed'
+  formula?: string   // when mode = 'roll'
 }
 
-interface UsageRecord {
-  entityId: string;         // stat, item, or ability ID
-  entityType: "stat" | "item" | "ability";
-  count: number;
-  isPinned: boolean;        // manual pin overrides auto-selection
+interface RestAction {
+  id:          string
+  characterId: string
+  name:        string   // e.g. "Short Rest"
+  resets:      RestReset[]
+}
+
+interface ConditionAffector {
+  statId:   string
+  modifier: number | string
+}
+
+interface Condition {
+  id:            string
+  name:          string
+  description?:  string
+  affectorRules?: ConditionAffector[]
+  durationType:  'rounds' | 'session' | 'permanent'
+  duration?:     number
+  isLibraryEntry: boolean
+}
+
+interface AppliedCondition {
+  conditionId:     string
+  characterId:     string
+  appliedAt:       string
+  remainingRounds?: number
 }
 
 interface Character {
-  id: string;
-  campaignId: string;
-  name: string;
-  avatarUrl?: string;
-  ownerId?: string;         // null if no account (local-only)
-  level: number;
-  currency: CurrencyDenomination[];
-  statBlocks: StatBlock[];
-  stats: Stat[];
-  items: Item[];
-  abilities: Ability[];
-  restActions: RestAction[];
-  appliedConditions: AppliedCondition[];
-  biography: Biography;
-  notes: Note[];
-  history: HistoryEntry[];
-  usageRecords: UsageRecord[];
-  createdAt: string;
-  updatedAt: string;
+  id:                string
+  campaignId:        string
+  name:              string
+  avatarUrl?:        string
+  ownerId?:          string
+  level:             number
+  stats:             Stat[]
+  items:             Item[]
+  abilities:         Ability[]
+  restActions:       RestAction[]
+  appliedConditions: AppliedCondition[]
+  biography:         Biography
+  notes:             Note[]
+  history:           HistoryEntry[]
+  sheetOrder?:       string[]  // global display order across all entity types by ID
+  createdAt:         string
+  updatedAt:         string
 }
 ```
+
+### `sheetOrder`
+
+`Character.sheetOrder` is the single source of truth for display order in the unified list. It is an array of entity IDs spanning all types (stats, items, abilities, biography sections, notes). When an item's ID is not present in `sheetOrder` (e.g. newly created), it appears at the end of the list sorted by its per-type `order` field. On drag-and-drop reorder, `sheetOrder` is updated with the full new sequence.
 
 ---
 
@@ -573,53 +355,95 @@ interface Character {
 
 ### Frontend
 
-| Concern        | Choice                  | Rationale                                             |
-| -------------- | ----------------------- | ----------------------------------------------------- |
-| Framework      | React + Vite            | Fast DX, great ecosystem, works well as PWA           |
-| Styling        | Tailwind CSS            | Mobile-first utility classes, fast iteration          |
-| State          | Zustand                 | Lightweight, simple, works well with local-first data |
-| Local storage  | Dexie.js (IndexedDB)    | Offline persistence, handles large data sets          |
-| PWA            | vite-plugin-pwa         | Generates service worker and manifest automatically   |
-| Routing        | React Router v7         | Standard, supports nested routes for character views  |
-| Formula engine | mathjs or custom parser | Safe expression evaluation for derived stats          |
+| Concern        | Choice               | Rationale                                             |
+|----------------|----------------------|-------------------------------------------------------|
+| Framework      | React 19 + Vite      | Fast DX, great ecosystem, works well as PWA           |
+| Styling        | Tailwind CSS v4      | Mobile-first utility classes, fast iteration          |
+| State          | Zustand              | Lightweight, simple, works well with local-first data |
+| Local storage  | Dexie.js (IndexedDB) | Offline persistence, handles large data sets          |
+| PWA            | vite-plugin-pwa      | Generates service worker and manifest automatically   |
+| Routing        | React Router v7      | Standard, supports nested routes for character views  |
 
 ### Backend (V2)
 
-| Concern       | Choice                         | Rationale                                               |
-| ------------- | ------------------------------ | ------------------------------------------------------- |
-| Platform      | Supabase                       | Auth + Postgres + Realtime in one, generous free tier   |
-| Auth          | Supabase Auth                  | Email/OAuth, integrates with sharing model              |
-| Database      | Postgres (via Supabase)        | Relational model fits character ownership and sharing   |
-| Realtime      | Supabase Realtime              | Live sync for shared character sheets                   |
+| Concern       | Choice          | Rationale                                               |
+|---------------|-----------------|---------------------------------------------------------|
+| Platform      | Supabase        | Auth + Postgres + Realtime in one, generous free tier   |
+| Auth          | Supabase Auth   | Email/OAuth, integrates with sharing model              |
+| Database      | Postgres        | Relational model fits character ownership and sharing   |
+| Realtime      | Supabase Realtime | Live sync for shared character sheets                 |
 | Sync strategy | Local-first, sync on reconnect | Offline takes priority; conflicts resolved by timestamp |
 
 ### Offline Strategy
 
 1. All data is written to IndexedDB first (the source of truth offline)
 2. When online, changes are synced to Supabase in the background
-3. Conflict resolution: last-write-wins per stat (timestamps compared)
+3. Conflict resolution: last-write-wins per character (timestamps compared)
 4. A sync status indicator shows the user if they have unsynced changes
 
 ---
 
 ## UI / UX Principles
 
-- **Thumb-friendly** — all primary actions reachable without two-handed use
-- **Fast edits** — tapping a stat immediately opens an inline edit, no modal required for simple changes
-- **Glanceable** — the character sheet overview shows all critical stats at once without scrolling
-- **Non-destructive** — history log means no changes are ever truly lost
+- **Thumb-friendly** — all primary actions reachable without two-handed use; Roll Check is 48px tall
+- **Progressive disclosure** — simple values visible at a glance; editing is one tap deeper via popovers and bottom sheets
+- **Non-destructive** — history log means no changes are ever truly lost; destructive actions (delete, dismiss-to-discard) require deliberate gestures
 - **Dark mode first** — default to dark theme; dim game tables make dark mode the expected environment
-- **Progressive disclosure** — simple values are visible at a glance; details (formulas, affectors, descriptions) are one tap deeper
+- **Flexible layout** — the unified draggable list lets each player organise their sheet the way that suits their playstyle, rather than enforcing a rigid section order
+
+---
+
+## Feature Status
+
+### Built
+
+- [x] Campaign view: create and manage campaigns (local, no account required)
+- [x] Character list view: see all characters within a campaign
+- [x] Create and manage characters
+- [x] Editable character name inline in the page header
+- [x] Custom stats: base value, optional min/max, rollable toggle, dice configuration
+- [x] Stat-to-stat affector relationships with per-field targeting (value / minimum / maximum)
+- [x] Stat popover: large +/− buttons, roll section, edit shortcut
+- [x] Roll Check button with togglable dice-notation / raw-total display
+- [x] Unified draggable character sheet: all entity types in one reorderable list
+- [x] Drag-and-drop with ghost preview and source-slot removal
+- [x] Stat edit sheet: inline-editable name in header, compact/default/full snap points, footer pinned to screen bottom
+- [x] Items: name, description, quantity, drag reorder, edit/delete
+- [x] Abilities: name, description, drag reorder, edit/delete
+- [x] Biography sections: inline title editing, collapsible markdown body, drag reorder
+- [x] Notes: title, markdown body, drag reorder, edit/delete
+- [x] History log: auto-generated on stat changes, pinned below the draggable list
+- [x] Condition library: apply conditions as chips, conditions can carry stat affector rules
+- [x] Rest actions: one-tap batch stat resets
+- [x] Bottom sheet: drag handle resizes sheet; footer always pinned to screen bottom; drag to floor dismisses
+- [x] Dice calculator overlay: quick dice buttons, formula input, roll history
+- [x] Dark mode
+- [x] Full offline support (PWA)
+
+### Planned (V2+)
+
+- [ ] User accounts (email/password or OAuth)
+- [ ] Cloud sync across devices
+- [ ] Campaign sharing via invite code
+- [ ] Party member characters in read-only view
+- [ ] Party health overview: live HP and conditions for all party members
+- [ ] Initiative tracker: GM-managed shared turn order
+- [ ] Real-time sync (edits appear live for all party members)
+- [ ] Session notes: campaign-level shared notes
+- [ ] Quick-access bar: auto-surfaces most-used stats/abilities/items
+- [ ] Search: scoped to open character or campaign
+- [ ] Data export (JSON)
+- [ ] Template library for common systems (D&D 5e, PF2e, etc.)
 
 ---
 
 ## Open Questions
 
-1. **Formula safety** — how do we evaluate user-defined formulas safely? (sandboxed eval vs. a parser library)
-2. **Conflict resolution** — if two players edit the same shared character simultaneously, how do we merge?
-3. **Template system** — should templates be user-created, bundled, or community-hosted?
+1. **Conflict resolution** — if two players edit the same shared character simultaneously, how do we merge?
+2. **Formula safety** — if roll expressions are added to items/abilities, how do we evaluate user-defined formulas safely?
+3. **History retention** — do we keep the full history forever, or allow the user to archive/clear it?
 4. **Avatar storage** — local blob in IndexedDB, or require an account to upload to cloud storage?
-5. **History retention** — do we keep the full history forever, or allow the user to archive/clear it?
+5. **Template system** — should templates be user-created, bundled, or community-hosted?
 
 ---
 
@@ -627,9 +451,9 @@ interface Character {
 
 | Milestone | Scope |
 |---|---|
-| **M1 — Local MVP** | Campaigns, characters, custom stats with affectors, items, abilities, offline PWA |
-| **M2 — Character Depth** | Currency, rest actions, biography, condition library |
-| **M3 — Session Tools** | Notes & history, session notes, quick-access bar, search, dice calculator, dark mode |
+| **M1 — Local MVP** | Campaigns, characters, custom stats with affectors, items, abilities, offline PWA ✓ |
+| **M2 — Character Depth** | Rest actions, biography, condition library, notes, history ✓ |
+| **M3 — Polish & Interactions** | Unified draggable list, stat popover, roll checks, bottom sheet gestures, inline editing ✓ |
 | **M4 — Accounts & Sync** | User accounts, cloud sync, multi-device support |
 | **M5 — Party Features** | Campaign sharing, read-only party view, party health overview, initiative tracker, real-time sync |
-| **M6 — Polish** | Templates, import/export, avatar uploads, dice calculator stat references |
+| **M6 — Discovery** | Search, quick-access bar, templates, import/export |

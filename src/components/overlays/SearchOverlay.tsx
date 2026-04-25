@@ -7,24 +7,21 @@ import { useSearch } from '../../hooks/useSearch'
 import { Badge } from '../ui/Badge'
 import type { BadgeProps } from '../ui/Badge'
 
-type ResultType = 'stat' | 'item' | 'ability' | 'note'
+type ResultType = 'stat' | 'item' | 'ability'
 
 const TYPE_LABELS: Record<ResultType, string> = {
   stat: 'Stats',
   item: 'Items',
   ability: 'Abilities',
-  note: 'Notes',
 }
 
 const TYPE_BADGE_VARIANT: Record<ResultType, BadgeProps['variant']> = {
   stat: 'indigo',
   item: 'blue',
   ability: 'yellow',
-  note: 'green',
 }
 
 function getResultName(result: ReturnType<typeof useSearch>['results'][number]): string {
-  if (result.type === 'note') return result.item.title
   return result.item.name
 }
 
@@ -54,13 +51,12 @@ export function SearchOverlay() {
     }
   }
 
-  // Group results by type, maintaining order: stat -> item -> ability -> note
   const grouped: Partial<Record<ResultType, typeof results>> = {}
   for (const result of results) {
     if (!grouped[result.type]) grouped[result.type] = []
     grouped[result.type]!.push(result)
   }
-  const orderedTypes: ResultType[] = ['stat', 'item', 'ability', 'note']
+  const orderedTypes: ResultType[] = ['stat', 'item', 'ability']
 
   return (
     <div
@@ -92,7 +88,7 @@ export function SearchOverlay() {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search stats, items, abilities, notes..."
+          placeholder="Search stats, items, abilities..."
           className="flex-1 bg-slate-800 border border-slate-600 focus:border-indigo-500 focus:outline-none text-slate-100 placeholder:text-slate-500 rounded-lg px-3 py-2 transition-colors"
           autoComplete="off"
         />
@@ -103,7 +99,7 @@ export function SearchOverlay() {
         {!query.trim() ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-slate-500 text-sm text-center">
-              Search stats, items, abilities, and notes
+              Search stats, items, and abilities
             </p>
           </div>
         ) : results.length === 0 ? (

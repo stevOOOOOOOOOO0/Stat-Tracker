@@ -61,7 +61,6 @@ export function CreateCharacterSheet({ isOpen, onClose, campaignId }: CreateChar
         restActions: [],
         appliedConditions: [],
         biography: { characterId: id, sections: [] },
-        notes: [],
         history: [],
         createdAt: timestamp,
         updatedAt: timestamp,

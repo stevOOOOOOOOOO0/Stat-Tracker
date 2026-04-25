@@ -168,20 +168,23 @@ export function StatEditSheet({ stat, isOpen, onClose, stats, items, abilities, 
     </div>
   )
 
+  const header = (
+    <div className="flex items-center justify-between gap-3 w-full">
+      <input
+        value={name}
+        onChange={e => setName(e.target.value)}
+        placeholder="Stat name"
+        autoFocus={!stat}
+        className="flex-1 min-w-0 text-lg font-semibold text-slate-100 bg-transparent placeholder-slate-500 outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1 -ml-1"
+      />
+      <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest flex-shrink-0">Stat</span>
+    </div>
+  )
+
   return (
     <>
-      <BottomSheet isOpen={isOpen} onClose={onClose} title={stat ? 'Edit Stat' : 'New Stat'} footer={footer}>
+      <BottomSheet isOpen={isOpen} onClose={onClose} title={header} footer={footer} compactHeight="210px">
         <div className="space-y-5">
-          {/* Name */}
-          <Input
-            label="Name"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="e.g. HP, Strength, AC"
-            required
-            autoFocus
-          />
-
           {/* Base Value */}
           <Input
             label="Base Value"

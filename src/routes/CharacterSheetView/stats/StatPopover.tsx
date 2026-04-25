@@ -68,24 +68,26 @@ export function StatPopover({ stat, allStats, characterId, onClose, onEdit, onRo
         className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-700/60"
       >
         {/* Header */}
-        <div className="flex items-center gap-2 px-5 pt-5 pb-3">
-          <h2 className="flex-1 text-slate-100 font-semibold text-lg truncate">{stat.name}</h2>
-          <button
-            type="button"
-            onClick={() => { onClose(); onEdit() }}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-700 transition-colors text-xl"
-            aria-label={`Edit ${stat.name}`}
-          >
-            ✎
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-700 transition-colors text-xl"
-            aria-label="Close"
-          >
-            ×
-          </button>
+        <div className="px-5 pt-4 pb-3">
+          <div className="flex items-center justify-end gap-1 mb-2">
+            <button
+              type="button"
+              onClick={() => { onClose(); onEdit() }}
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-700 transition-colors text-xl"
+              aria-label={`Edit ${stat.name}`}
+            >
+              ✎
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-700 transition-colors text-xl"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+          <h2 className="text-slate-100 font-semibold text-lg">{stat.name}</h2>
         </div>
 
         {/* Value display */}

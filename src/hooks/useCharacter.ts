@@ -20,9 +20,6 @@ export function useCharacter() {
   const addAbility = useCharacterStore(state => state.addAbility)
   const updateAbility = useCharacterStore(state => state.updateAbility)
   const removeAbility = useCharacterStore(state => state.removeAbility)
-  const addNote = useCharacterStore(state => state.addNote)
-  const updateNote = useCharacterStore(state => state.updateNote)
-  const removeNote = useCharacterStore(state => state.removeNote)
   const appendHistory = useCharacterStore(state => state.appendHistory)
   const applyCondition = useCharacterStore(state => state.applyCondition)
   const removeCondition = useCharacterStore(state => state.removeCondition)
@@ -47,9 +44,6 @@ export function useCharacter() {
     addAbility,
     updateAbility,
     removeAbility,
-    addNote,
-    updateNote,
-    removeNote,
     appendHistory,
     applyCondition,
     removeCondition,

@@ -17,7 +17,6 @@ import { CharacterSheetList } from './CharacterSheetList'
 import { StatEditSheet } from './stats/StatEditSheet'
 import { ItemEditSheet } from './items/ItemEditSheet'
 import { AbilityEditSheet } from './abilities/AbilityEditSheet'
-import { NoteEditSheet } from './biography/NoteEditSheet'
 import { HistoryLog } from './biography/HistoryLog'
 import type { RestAction, RestReset, HistoryEntryType } from '../../types'
 import { generateId } from '../../lib/ids'
@@ -60,14 +59,13 @@ function HistorySection({ history, characterId }: HistorySectionProps) {
   )
 }
 
-type CreateType = 'stat' | 'item' | 'ability' | 'bio-section' | 'note'
+type CreateType = 'stat' | 'item' | 'ability' | 'bio-section'
 
 const CREATE_OPTIONS: { type: CreateType; label: string; icon: string; description: string }[] = [
   { type: 'stat',        label: 'Stat',              icon: '📊', description: 'HP, Strength, AC…' },
   { type: 'item',        label: 'Item',              icon: '⚔️',  description: 'Weapon, potion, gear…' },
   { type: 'ability',     label: 'Ability',           icon: '✨', description: 'Spell, skill, feature…' },
   { type: 'bio-section', label: 'Biography Section', icon: '📖', description: 'Backstory, traits…' },
-  { type: 'note',        label: 'Note',              icon: '📝', description: 'Session notes, reminders…' },
 ]
 
 interface NewRestActionForm {
@@ -101,7 +99,6 @@ export default function CharacterSheetView() {
   const [createStatOpen,    setCreateStatOpen]    = useState(false)
   const [createItemOpen,    setCreateItemOpen]    = useState(false)
   const [createAbilityOpen, setCreateAbilityOpen] = useState(false)
-  const [createNoteOpen,    setCreateNoteOpen]    = useState(false)
 
   useEffect(() => {
     if (!characterId || !campaignId) return
@@ -142,8 +139,6 @@ export default function CharacterSheetView() {
           },
         })
       }
-    } else if (type === 'note') {
-      setCreateNoteOpen(true)
     }
   }
 
@@ -238,13 +233,6 @@ export default function CharacterSheetView() {
           onClose={() => setCreateAbilityOpen(false)}
           characterId={characterId}
           allStats={character?.stats ?? []}
-        />
-
-        <NoteEditSheet
-          note={null}
-          isOpen={createNoteOpen}
-          onClose={() => setCreateNoteOpen(false)}
-          characterId={characterId}
         />
 
         <BottomSheet

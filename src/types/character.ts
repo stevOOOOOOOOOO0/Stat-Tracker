@@ -4,7 +4,6 @@ import type { Ability } from './ability'
 import type { RestAction } from './rest'
 import type { AppliedCondition } from './condition'
 import type { Biography } from './biography'
-import type { Note } from './note'
 import type { HistoryEntry } from './history'
 
 export interface Character {
@@ -20,7 +19,6 @@ export interface Character {
   restActions: RestAction[]
   appliedConditions: AppliedCondition[]
   biography: Biography
-  notes: Note[]
   history: HistoryEntry[]
   sheetOrder?: string[]
   createdAt: string

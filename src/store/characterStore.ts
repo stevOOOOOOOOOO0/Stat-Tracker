@@ -3,7 +3,6 @@ import type { Character } from '../types/character'
 import type { Stat, AffectTarget } from '../types/stat'
 import type { Item } from '../types/item'
 import type { Ability } from '../types/ability'
-import type { Note } from '../types/note'
 import type { HistoryEntry } from '../types/history'
 import type { AppliedCondition, Condition } from '../types/condition'
 import type { RestAction } from '../types/rest'
@@ -21,9 +20,6 @@ import { applyConditionAffectors } from '../engine/conditionProcessor'
 import { applyRestAction } from '../engine/restProcessor'
 
 function migrateCharacter(char: Character): Character {
-  const sortedNotes = [...(char.notes ?? [])].sort((a, b) =>
-    a.createdAt.localeCompare(b.createdAt)
-  )
   const migratedStats = (char.stats ?? []).map(s => {
     const raw = s as unknown as Record<string, unknown>
     return {
@@ -42,22 +38,15 @@ function migrateCharacter(char: Character): Character {
         ?? [],
     }
   })
-  const migratedNotes = sortedNotes.map((n, i) => ({
-    ...n,
-    order: (n as unknown as Record<string, unknown>)['order'] !== undefined
-      ? (n as unknown as Record<string, unknown>)['order'] as number
-      : i,
-  }))
 
   const sheetOrder = char.sheetOrder ?? [
     ...[...migratedStats].sort((a, b) => a.order - b.order).map(s => s.id),
     ...[...(char.items ?? [])].sort((a, b) => a.order - b.order).map(i => i.id),
     ...[...(char.abilities ?? [])].sort((a, b) => a.order - b.order).map(a => a.id),
     ...[...(char.biography?.sections ?? [])].sort((a, b) => a.order - b.order).map(s => s.id),
-    ...migratedNotes.sort((a, b) => a.order - b.order).map(n => n.id),
   ]
 
-  return { ...char, stats: migratedStats, notes: migratedNotes, sheetOrder }
+  return { ...char, stats: migratedStats, sheetOrder }
 }
 
 interface CharacterState {
@@ -79,9 +68,6 @@ interface CharacterState {
   addAbility: (characterId: string, ability: Ability) => void
   updateAbility: (characterId: string, ability: Ability) => void
   removeAbility: (characterId: string, abilityId: string) => void
-  addNote: (characterId: string, note: Note) => void
-  updateNote: (characterId: string, note: Note) => void
-  removeNote: (characterId: string, noteId: string) => void
   appendHistory: (characterId: string, entry: HistoryEntry) => void
   applyCondition: (characterId: string, appliedCondition: AppliedCondition, conditionLibrary: Condition[]) => void
   removeCondition: (characterId: string, conditionId: string, conditionLibrary: Condition[]) => void
@@ -120,7 +106,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
       restActions: data.restActions ?? [],
       appliedConditions: data.appliedConditions ?? [],
       biography: data.biography ?? { characterId: id, sections: [] },
-      notes: data.notes ?? [],
       history: data.history ?? [],
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -369,47 +354,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     })
   },
 
-  addNote: (characterId, note) => {
-    set(state => {
-      const character = state.characters[characterId]
-      if (!character) return state
-      const updatedChar: Character = {
-        ...character,
-        notes: [...character.notes, note],
-        updatedAt: now(),
-      }
-      dbUpdateCharacter(characterId, updatedChar)
-      return { characters: { ...state.characters, [characterId]: updatedChar } }
-    })
-  },
-
-  updateNote: (characterId, note) => {
-    set(state => {
-      const character = state.characters[characterId]
-      if (!character) return state
-      const updatedChar: Character = {
-        ...character,
-        notes: character.notes.map(n => n.id === note.id ? note : n),
-        updatedAt: now(),
-      }
-      dbUpdateCharacter(characterId, updatedChar)
-      return { characters: { ...state.characters, [characterId]: updatedChar } }
-    })
-  },
-
-  removeNote: (characterId, noteId) => {
-    set(state => {
-      const character = state.characters[characterId]
-      if (!character) return state
-      const updatedChar: Character = {
-        ...character,
-        notes: character.notes.filter(n => n.id !== noteId),
-        updatedAt: now(),
-      }
-      dbUpdateCharacter(characterId, updatedChar)
-      return { characters: { ...state.characters, [characterId]: updatedChar } }
-    })
-  },
 
   appendHistory: (characterId, entry) => {
     set(state => {

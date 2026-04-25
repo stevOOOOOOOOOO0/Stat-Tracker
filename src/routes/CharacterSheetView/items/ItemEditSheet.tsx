@@ -28,6 +28,8 @@ export function ItemEditSheet({ item, isOpen, onClose, characterId, allStats = [
   const [description, setDescription] = useState('')
   const [trackQty, setTrackQty]       = useState(false)
   const [quantity, setQuantity]       = useState(1)
+  const [isRollable, setIsRollable]   = useState(false)
+  const [diceFormula, setDiceFormula] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
@@ -37,11 +39,15 @@ export function ItemEditSheet({ item, isOpen, onClose, characterId, allStats = [
       setDescription(item.description ?? '')
       setTrackQty(item.quantity !== undefined)
       setQuantity(item.quantity ?? 1)
+      setIsRollable(!!item.diceFormula)
+      setDiceFormula(item.diceFormula ?? '')
     } else {
       setName('')
       setDescription('')
       setTrackQty(false)
       setQuantity(1)
+      setIsRollable(false)
+      setDiceFormula('')
     }
   }, [isOpen, item])
 
@@ -52,6 +58,7 @@ export function ItemEditSheet({ item, isOpen, onClose, characterId, allStats = [
       name: name.trim(),
       description: description || undefined,
       quantity: trackQty ? quantity : undefined,
+      diceFormula: isRollable && diceFormula.trim() ? diceFormula.trim() : undefined,
     }
     if (item) {
       updateItem(characterId, { ...item, ...base })
@@ -94,6 +101,19 @@ export function ItemEditSheet({ item, isOpen, onClose, characterId, allStats = [
           <div className="space-y-2">
             <Toggle checked={trackQty} onChange={v => { setTrackQty(v); if (v && quantity === 0) setQuantity(1) }} label="Track quantity" />
             {trackQty && <NumberStepper value={quantity} onChange={setQuantity} min={0} size="sm" label="Quantity" />}
+          </div>
+          <div className="space-y-2">
+            <Toggle checked={isRollable} onChange={setIsRollable} label="Rollable" />
+            {isRollable && (
+              <div>
+                <Input
+                  label="Dice formula"
+                  value={diceFormula}
+                  onChange={e => setDiceFormula(e.target.value)}
+                  placeholder="e.g. 2d6+3, 1d20, 4d4+2"
+                />
+              </div>
+            )}
           </div>
           <div className="flex gap-3 pt-2">
             {item && <Button variant="danger" size="sm" type="button" onClick={() => setConfirmDelete(true)}>Delete</Button>}

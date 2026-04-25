@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import type { Stat, Item, Ability, Note, BiographySection, Character } from '../../types'
+import type { Stat, Item, Ability, BiographySection, Character } from '../../types'
 import { useCharacterStore } from '../../store/characterStore'
 import { SortableList } from '../../components/shared/SortableList'
 import { ConfirmDialog } from '../../components/overlays/ConfirmDialog'
@@ -7,24 +7,22 @@ import { StatRow } from './stats/StatRow'
 import { StatPopover } from './stats/StatPopover'
 import { StatEditSheet } from './stats/StatEditSheet'
 import { ItemCard } from './items/ItemCard'
+import { ItemPopover } from './items/ItemPopover'
 import { ItemEditSheet } from './items/ItemEditSheet'
 import { AbilityCard } from './abilities/AbilityCard'
 import { AbilityEditSheet } from './abilities/AbilityEditSheet'
-import { NoteCard } from './biography/NoteCard'
-import { NoteEditSheet } from './biography/NoteEditSheet'
 import { BiographySectionEditor } from './biography/BiographySectionEditor'
 
 type SheetEntry =
   | { kind: 'stat'; id: string; data: Stat }
   | { kind: 'item'; id: string; data: Item }
   | { kind: 'ability'; id: string; data: Ability }
-  | { kind: 'note'; id: string; data: Note }
   | { kind: 'bio-section'; id: string; data: BiographySection }
 
 interface ActiveRoll { statId: string; result: number; diceTotal: number }
 
 const TYPE_PRIORITY: Record<SheetEntry['kind'], number> = {
-  stat: 0, item: 1, ability: 2, 'bio-section': 3, note: 4,
+  stat: 0, item: 1, ability: 2, 'bio-section': 3,
 }
 
 function buildEntries(character: Character): SheetEntry[] {
@@ -33,7 +31,6 @@ function buildEntries(character: Character): SheetEntry[] {
     ...character.items.map(d => ({ kind: 'item' as const, id: d.id, data: d })),
     ...character.abilities.map(d => ({ kind: 'ability' as const, id: d.id, data: d })),
     ...(character.biography?.sections ?? []).map(d => ({ kind: 'bio-section' as const, id: d.id, data: d })),
-    ...character.notes.map(d => ({ kind: 'note' as const, id: d.id, data: d })),
   ]
 
   const orderMap = new Map((character.sheetOrder ?? []).map((id, i) => [id, i]))
@@ -64,12 +61,11 @@ export function CharacterSheetList({ character, characterId }: CharacterSheetLis
   const [activeStatId,          setActiveStatId]          = useState<string | null>(null)
   const [editingStat,           setEditingStat]           = useState<Stat | null | undefined>(undefined)
   const [activeRoll,            setActiveRoll]            = useState<ActiveRoll | null>(null)
+  const [activeItemId,          setActiveItemId]          = useState<string | null>(null)
   const [editingItem,           setEditingItem]           = useState<Item | null | undefined>(undefined)
   const [confirmDeleteItemId,   setConfirmDeleteItemId]   = useState<string | null>(null)
   const [editingAbility,        setEditingAbility]        = useState<Ability | null | undefined>(undefined)
   const [confirmDeleteAbilityId,setConfirmDeleteAbilityId]= useState<string | null>(null)
-  const [editingNote,           setEditingNote]           = useState<Note | null>(null)
-
   const rollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => { if (rollTimerRef.current) clearTimeout(rollTimerRef.current) }, [])
 
@@ -118,8 +114,7 @@ export function CharacterSheetList({ character, characterId }: CharacterSheetLis
                 <ItemCard
                   key={entry.id}
                   item={entry.data}
-                  onEdit={() => setEditingItem(entry.data)}
-                  onDelete={() => setConfirmDeleteItemId(entry.id)}
+                  onOpen={() => setActiveItemId(entry.id)}
                   dragHandleProps={dragHandleProps}
                 />
               )
@@ -130,16 +125,6 @@ export function CharacterSheetList({ character, characterId }: CharacterSheetLis
                   ability={entry.data}
                   onEdit={() => setEditingAbility(entry.data)}
                   onDelete={() => setConfirmDeleteAbilityId(entry.id)}
-                  dragHandleProps={dragHandleProps}
-                />
-              )
-            case 'note':
-              return (
-                <NoteCard
-                  key={entry.id}
-                  note={entry.data}
-                  onEdit={() => setEditingNote(entry.data)}
-                  onDelete={() => setEditingNote(entry.data)}
                   dragHandleProps={dragHandleProps}
                 />
               )
@@ -184,6 +169,18 @@ export function CharacterSheetList({ character, characterId }: CharacterSheetLis
         ) : null
       })()}
 
+      {activeItemId !== null && (() => {
+        const activeItem = character.items.find(i => i.id === activeItemId)
+        return activeItem ? (
+          <ItemPopover
+            item={activeItem}
+            characterId={characterId}
+            onClose={() => setActiveItemId(null)}
+            onEdit={() => { setActiveItemId(null); setEditingItem(activeItem) }}
+          />
+        ) : null
+      })()}
+
       {editingStat !== undefined && (
         <StatEditSheet
           stat={editingStat ?? null}
@@ -215,13 +212,6 @@ export function CharacterSheetList({ character, characterId }: CharacterSheetLis
           allStats={character.stats}
         />
       )}
-
-      <NoteEditSheet
-        note={editingNote}
-        isOpen={editingNote !== null}
-        onClose={() => setEditingNote(null)}
-        characterId={characterId}
-      />
 
       <ConfirmDialog
         isOpen={confirmDeleteItemId !== null}
