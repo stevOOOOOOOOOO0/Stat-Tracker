@@ -4,7 +4,7 @@ import type { Stat } from '../types/stat'
 export interface RollResult {
   total: number
   breakdown: string
-  rolls: { dice: string; result: number }[]
+  rolls: { dice: string; result: number; individual: number[] }[]
 }
 
 export function rollDie(sides: number): number {
@@ -16,7 +16,7 @@ export function rollDie(sides: number): number {
  * and stat references with their current values.
  */
 export function evaluateRoll(formula: string, stats: Stat[]): RollResult {
-  const rolls: { dice: string; result: number }[] = []
+  const rolls: { dice: string; result: number; individual: number[] }[] = []
   const scope = buildStatScope(stats)
 
   // Replace all XdY tokens with random rolls, tracking each roll
@@ -33,11 +33,7 @@ export function evaluateRoll(formula: string, stats: Stat[]): RollResult {
     }
 
     const diceLabel = `${x}d${y}`
-    const rollEntry = {
-      dice: diceLabel,
-      result: total,
-    }
-    rolls.push(rollEntry)
+    rolls.push({ dice: diceLabel, result: total, individual: individualRolls })
 
     return `(${total})`
   })

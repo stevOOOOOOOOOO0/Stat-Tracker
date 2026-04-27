@@ -14,6 +14,7 @@ export interface ItemPopoverProps {
 export function ItemPopover({ item, characterId, onClose, onEdit }: ItemPopoverProps) {
   const updateItem = useCharacterStore(s => s.updateItem)
   const [rollResult, setRollResult] = useState<RollResult | null>(null)
+  const [showBreakdown, setShowBreakdown] = useState(false)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -24,6 +25,7 @@ export function ItemPopover({ item, characterId, onClose, onEdit }: ItemPopoverP
   const handleRoll = () => {
     if (!item.diceFormula) return
     setRollResult(evaluateRoll(item.diceFormula, []))
+    setShowBreakdown(false)
   }
 
   const decrement = () => {
@@ -111,19 +113,39 @@ export function ItemPopover({ item, characterId, onClose, onEdit }: ItemPopoverP
               <span>Roll {item.diceFormula}</span>
             </button>
             {rollResult !== null && (
-              <div className="flex items-center justify-center gap-1.5">
-                <span className="text-xs font-mono text-slate-400 bg-slate-700 px-1.5 py-0.5 rounded tabular-nums">
-                  {item.diceFormula}
-                </span>
-                <span className="text-xs text-slate-500">=</span>
-                <span className="text-indigo-300 font-bold tabular-nums text-lg">{rollResult.total}</span>
-                <button
-                  type="button"
-                  onClick={() => setRollResult(null)}
-                  className="text-slate-600 hover:text-slate-400 text-xs ml-1"
-                >
-                  ✕
-                </button>
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowBreakdown(v => !v)}
+                    className={`text-xs font-mono tabular-nums px-1.5 py-0.5 rounded transition-colors ${
+                      showBreakdown
+                        ? 'bg-indigo-600/30 text-indigo-300'
+                        : 'bg-slate-700 text-slate-400 hover:text-slate-200'
+                    }`}
+                    title={showBreakdown ? 'Hide individual rolls' : 'Show individual rolls'}
+                  >
+                    {item.diceFormula}
+                  </button>
+                  <span className="text-xs text-slate-500">=</span>
+                  <span className="text-indigo-300 font-bold tabular-nums text-lg">{rollResult.total}</span>
+                  <button
+                    type="button"
+                    onClick={() => setRollResult(null)}
+                    className="text-slate-600 hover:text-slate-400 text-xs ml-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+                {showBreakdown && (
+                  <div className="flex flex-wrap gap-1 justify-center">
+                    {rollResult.rolls.flatMap(r => r.individual).map((v, i) => (
+                      <span key={i} className="text-xs font-mono bg-slate-700 text-slate-300 px-2 py-1 rounded tabular-nums">
+                        {v}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -49,10 +49,13 @@ export function ItemEditSheet({ item, isOpen, onClose, characterId, allStats = [
       setIsRollable(false)
       setDiceFormula('')
     }
+    setConfirmDelete(false)
   }, [isOpen, item])
 
+  const canSave = name.trim().length > 0
+
   const handleSave = () => {
-    if (!name.trim()) return
+    if (!canSave) return
     const base = {
       characterId,
       name: name.trim(),
@@ -76,11 +79,40 @@ export function ItemEditSheet({ item, isOpen, onClose, characterId, allStats = [
     onClose()
   }
 
+  const header = (
+    <div className="flex items-center justify-between gap-3 w-full">
+      <input
+        value={name}
+        onChange={e => setName(e.target.value)}
+        placeholder="Item name"
+        autoFocus={!item}
+        className="flex-1 min-w-0 text-lg font-semibold text-slate-100 bg-transparent placeholder-slate-500 outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1 -ml-1"
+      />
+      <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest flex-shrink-0">Item</span>
+    </div>
+  )
+
+  const footer = (
+    <div className="flex gap-3">
+      {item && (
+        <Button variant="danger" size="sm" type="button" onClick={() => setConfirmDelete(true)}>
+          Delete
+        </Button>
+      )}
+      <div className="flex-1" />
+      <Button variant="ghost" size="sm" type="button" onClick={onClose}>
+        Discard
+      </Button>
+      <Button variant="primary" size="sm" type="button" onClick={handleSave} disabled={!canSave}>
+        Save
+      </Button>
+    </div>
+  )
+
   return (
     <>
-      <BottomSheet isOpen={isOpen} onClose={onClose} title={item ? 'Edit Item' : 'New Item'}>
+      <BottomSheet isOpen={isOpen} onClose={onClose} title={header} footer={footer} compactHeight="210px">
         <div className="space-y-4">
-          <Input label="Name" value={name} onChange={e => setName(e.target.value)} placeholder="Item name" required autoFocus />
           {item && (() => {
             const affectingStats = allStats.filter(s => (s.affectees ?? []).some(e => e.id === item.id))
             return affectingStats.length > 0 ? (
@@ -105,21 +137,13 @@ export function ItemEditSheet({ item, isOpen, onClose, characterId, allStats = [
           <div className="space-y-2">
             <Toggle checked={isRollable} onChange={setIsRollable} label="Rollable" />
             {isRollable && (
-              <div>
-                <Input
-                  label="Dice formula"
-                  value={diceFormula}
-                  onChange={e => setDiceFormula(e.target.value)}
-                  placeholder="e.g. 2d6+3, 1d20, 4d4+2"
-                />
-              </div>
+              <Input
+                label="Dice formula"
+                value={diceFormula}
+                onChange={e => setDiceFormula(e.target.value)}
+                placeholder="e.g. 2d6+3, 1d20, 4d4+2"
+              />
             )}
-          </div>
-          <div className="flex gap-3 pt-2">
-            {item && <Button variant="danger" size="sm" type="button" onClick={() => setConfirmDelete(true)}>Delete</Button>}
-            <div className="flex-1" />
-            <Button variant="ghost" size="sm" type="button" onClick={onClose}>Cancel</Button>
-            <Button variant="primary" size="sm" type="button" onClick={handleSave} disabled={!name.trim()}>Save</Button>
           </div>
         </div>
       </BottomSheet>
